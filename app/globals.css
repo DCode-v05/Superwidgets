@@ -1,0 +1,134 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #F8F4ED;
+  --foreground: #0F0E0C;
+  --surface: #FFFFFF;
+  --surface-2: #FAF6EE;
+  --border: #E5DCD0;
+  --secondary: #76706A;
+  --bubble-bg: #FFFFFF;
+}
+
+.dark, html.dark {
+  --background: #1A1714;
+  --foreground: #F4ECDF;
+  --surface: #22201C;
+  --surface-2: #2B2823;
+  --border: #322E28;
+  --secondary: #9B948A;
+  --bubble-bg: #22201C;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #1A1714;
+    --foreground: #F4ECDF;
+    --surface: #22201C;
+    --surface-2: #2B2823;
+    --border: #322E28;
+    --secondary: #9B948A;
+    --bubble-bg: #22201C;
+  }
+}
+
+html, body {
+  background: var(--background);
+  color: var(--foreground);
+  height: 100%;
+  font-feature-settings: "ss01", "cv01";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Atmospheric backdrop — subtle warm radial gradients */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(236, 59, 74, 0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(168, 35, 47, 0.025) 0%, transparent 70%);
+}
+
+/* Refined markdown prose */
+.md-prose {
+  color: var(--foreground);
+}
+.md-prose p {
+  margin-block: 0.5rem;
+  line-height: 1.65;
+}
+.md-prose p:first-child { margin-top: 0; }
+.md-prose p:last-child { margin-bottom: 0; }
+.md-prose ul, .md-prose ol {
+  padding-left: 1.25rem;
+  margin-block: 0.5rem;
+}
+.md-prose ul { list-style: disc; }
+.md-prose ol { list-style: decimal; }
+.md-prose li { margin-block: 0.25rem; }
+.md-prose strong { font-weight: 600; }
+.md-prose em { font-style: italic; }
+.md-prose h1, .md-prose h2, .md-prose h3 {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-block: 0.85rem 0.4rem;
+  line-height: 1.15;
+}
+.md-prose h1 { font-size: 1.6rem; }
+.md-prose h2 { font-size: 1.3rem; }
+.md-prose h3 { font-size: 1.1rem; }
+.md-prose a {
+  color: #EC3B4A;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+.md-prose blockquote {
+  border-left: 2px solid #EC3B4A;
+  padding-left: 1rem;
+  color: var(--secondary);
+  margin-block: 0.75rem;
+  font-style: italic;
+}
+.md-prose code {
+  background: var(--surface-2);
+  color: #EC3B4A;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.88em;
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+}
+.md-prose pre {
+  margin-block: 0.75rem;
+}
+
+/* Widget bubble entrance animation */
+@keyframes bap-bubble-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.bap-bubble {
+  animation: bap-bubble-in 0.35s ease-out;
+}
+
+/* Refined scrollbar */
+.scroll-area::-webkit-scrollbar { width: 6px; }
+.scroll-area::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+.scroll-area::-webkit-scrollbar-thumb:hover {
+  background: var(--secondary);
+}
+
+/* Selection */
+::selection {
+  background: #EC3B4A;
+  color: white;
+}
