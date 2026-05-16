@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Sparkles, RotateCcw, AlertTriangle } from "lucide-react";
+import { Sparkles, RotateCcw, AlertTriangle, Download } from "lucide-react";
 import { useChat } from "@/lib/hooks/useChat";
 import { ChatMessageList } from "./ChatMessageList";
 import { ChatInput } from "./ChatInput";
@@ -11,6 +11,8 @@ import {
   selectionToOpts,
   type ChatSelection,
 } from "./ModeSelector";
+import { CostCalculator } from "./CostCalculator";
+import { downloadChatPage } from "@/lib/download-page";
 
 const DEFAULT_SELECTION: ChatSelection = {
   providerId: "sonnet",
@@ -52,7 +54,7 @@ export function ChatShell() {
     setSelection(DEFAULT_SELECTION);
   }, [reset]);
 
-  const showLlamaWarning = selection.providerId === "llama";
+  const showExpensiveWarning = selection.providerId === "gpt-5.5";
 
   return (
     <div className="relative flex flex-col h-full">
@@ -66,14 +68,26 @@ export function ChatShell() {
             Interactive UI Responses
           </span>
         </div>
-        <button
-          onClick={handleReset}
-          disabled={messages.length === 0}
-          className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.2em] font-mono text-[var(--secondary)] hover:text-accent disabled:opacity-30 disabled:hover:text-[var(--secondary)] transition-colors"
-        >
-          <RotateCcw className="h-3 w-3" strokeWidth={1.5} />
-          New chat
-        </button>
+        <div className="flex items-center gap-5">
+          <CostCalculator />
+          <button
+            onClick={() => downloadChatPage(messages)}
+            disabled={messages.length === 0}
+            className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.2em] font-mono text-[var(--secondary)] hover:text-accent disabled:opacity-30 disabled:hover:text-[var(--secondary)] transition-colors"
+            title="Download the entire chat as a standalone .html page"
+          >
+            <Download className="h-3 w-3" strokeWidth={1.5} />
+            Download page
+          </button>
+          <button
+            onClick={handleReset}
+            disabled={messages.length === 0}
+            className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.2em] font-mono text-[var(--secondary)] hover:text-accent disabled:opacity-30 disabled:hover:text-[var(--secondary)] transition-colors"
+          >
+            <RotateCcw className="h-3 w-3" strokeWidth={1.5} />
+            New chat
+          </button>
+        </div>
       </header>
 
       <div className="relative z-10 flex-1 overflow-hidden flex flex-col">
@@ -99,11 +113,11 @@ export function ChatShell() {
             onChange={setSelection}
             disabled={isStreaming}
           />
-          {showLlamaWarning && (
+          {showExpensiveWarning && (
             <div className="flex items-start gap-2 rounded border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
               <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" strokeWidth={1.5} />
               <span>
-                Llama on Groq has no prompt caching — every call pays full input price.
+                GPT-5.5 is the premium tier — $5/$30 per MTok input/output, roughly 4× the cost of GPT-5.4. Use sparingly for the hardest queries.
               </span>
             </div>
           )}

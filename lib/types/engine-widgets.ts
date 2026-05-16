@@ -23,6 +23,8 @@ export interface ChatMessage {
   text: string;
   widgetHtml: string | null;
   outputFormat?: OutputFormat;
+  useSkill?: boolean;
+  pipeline?: boolean;
   usage?: UsageReport;
   isStreaming?: boolean;
 }

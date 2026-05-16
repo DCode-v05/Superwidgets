@@ -110,6 +110,8 @@ export function useChat(): UseChatReturn {
       text: "",
       widgetHtml: null,
       outputFormat: opts.outputFormat,
+      useSkill: opts.useSkill,
+      pipeline: opts.pipeline,
       isStreaming: true,
     };
 

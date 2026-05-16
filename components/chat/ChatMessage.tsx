@@ -44,7 +44,14 @@ export function ChatMessage({ message }: ChatMessageProps) {
               format={message.outputFormat ?? "html"}
             />
           )}
-          {message.usage && <UsageFooter usage={message.usage} />}
+          {message.usage && (
+            <UsageFooter
+              usage={message.usage}
+              useSkill={message.useSkill}
+              pipeline={message.pipeline}
+              outputFormat={message.outputFormat}
+            />
+          )}
         </div>
       </div>
     </div>
@@ -115,7 +122,14 @@ function formatCost(usd: number): string {
   return `$${usd.toFixed(2)}`;
 }
 
-function UsageFooter({ usage }: { usage: UsageReport }) {
+interface UsageFooterProps {
+  usage: UsageReport;
+  useSkill?: boolean;
+  pipeline?: boolean;
+  outputFormat?: OutputFormat;
+}
+
+function UsageFooter({ usage, useSkill, pipeline, outputFormat }: UsageFooterProps) {
   const hitPct = Math.round(usage.cacheHitRate * 100);
   return (
     <div className="flex items-center gap-x-3 gap-y-1 flex-wrap text-[10px] font-mono uppercase tracking-[0.15em] text-[var(--secondary)] px-1">
@@ -137,9 +151,39 @@ function UsageFooter({ usage }: { usage: UsageReport }) {
       <span>
         <span className="text-[var(--foreground)]">{formatCost(usage.totalCost)}</span>
       </span>
-      <span className="opacity-40 ml-auto normal-case tracking-normal">
-        {usage.providerId}
-      </span>
+
+      <div className="flex items-center gap-1.5 ml-auto">
+        <span className="opacity-60 normal-case tracking-normal">
+          {usage.providerId}
+        </span>
+        {outputFormat && (
+          <span className="px-1.5 py-0.5 rounded border border-[var(--border)] text-[9px]">
+            {outputFormat}
+          </span>
+        )}
+        <span
+          className={
+            "px-1.5 py-0.5 rounded border text-[9px] " +
+            (useSkill
+              ? "border-accent text-accent"
+              : "border-[var(--border)] opacity-50")
+          }
+          title={useSkill ? "Frontend Design Skill prepended" : "Skill off"}
+        >
+          {useSkill ? "+skill" : "no skill"}
+        </span>
+        <span
+          className={
+            "px-1.5 py-0.5 rounded border text-[9px] " +
+            (pipeline
+              ? "border-accent text-accent"
+              : "border-[var(--border)] opacity-50")
+          }
+          title={pipeline ? "Router → specialist (2 LLM calls)" : "Single call"}
+        >
+          {pipeline ? "pipeline" : "single"}
+        </span>
+      </div>
     </div>
   );
 }

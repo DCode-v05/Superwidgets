@@ -15,20 +15,20 @@ export interface ChatSelection {
 interface ModelOption {
   id: ProviderId;
   label: string;
-  family: "Anthropic" | "Google" | "OpenAI" | "Groq";
+  family: "Anthropic" | "Google" | "OpenAI";
 }
 
 const MODEL_OPTIONS: ModelOption[] = [
   { id: "sonnet", label: "Sonnet 4.6", family: "Anthropic" },
   { id: "haiku", label: "Haiku 4.5", family: "Anthropic" },
-  { id: "gemini-2.5", label: "Gemini 2.5 Flash", family: "Google" },
   { id: "gemini-3", label: "Gemini 3 Flash (preview)", family: "Google" },
+  { id: "gemini-3.1", label: "Gemini 3.1 Flash Lite (preview)", family: "Google" },
   { id: "gpt-5.4-mini", label: "GPT-5.4 Mini (UI-tuned)", family: "OpenAI" },
   { id: "gpt-5.4", label: "GPT-5.4 (UI flagship)", family: "OpenAI" },
-  { id: "llama", label: "Llama 3.3 70B", family: "Groq" },
+  { id: "gpt-5.5", label: "GPT-5.5 (premium)", family: "OpenAI" },
 ];
 
-const FAMILIES: Array<ModelOption["family"]> = ["Anthropic", "Google", "OpenAI", "Groq"];
+const FAMILIES: Array<ModelOption["family"]> = ["Anthropic", "Google", "OpenAI"];
 
 export function selectionToOpts(sel: ChatSelection) {
   return {

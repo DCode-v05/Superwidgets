@@ -27,11 +27,10 @@ metadata:
    - Usage from both calls is summed and reported as ONE combined `usage` SSE event.
    - The router's chosen intent is surfaced to the user as a one-line italic breadcrumb at the top of the response (e.g. `_Router picked **decision_card**._`).
 
-Models available:
+Models available (after 2026-05-13 cleanup: Llama/Groq + Gemini 2.5 removed, Gemini 3.1 Flash Lite + GPT-5.5 added):
 - **Anthropic:** Sonnet 4.6 (default), Haiku 4.5 — both cached via beta `cache_control: ephemeral`
-- **Google:** Gemini 2.5 Flash, Gemini 3 Flash preview (`gemini-3-flash-preview`)
-- **OpenAI:** GPT-5.4 Mini (UI-tuned, `gpt-5.4-mini`, ~$0.75/$4.50), GPT-5.4 (UI flagship, `gpt-5.4`, ~$1.25/$10). Both reasoning models; `reasoning_effort: "low"` set for any `gpt-5*` to preserve output budget. Auto-caching on prompts ≥ 1024 tokens.
-- **Groq:** Llama 3.3 70B (`llama-3.3-70b-versatile`, no caching, UI banner warns)
+- **Google:** Gemini 3 Flash preview (`gemini-3-flash-preview`, $0.50/$3.00), Gemini 3.1 Flash Lite preview (`gemini-3.1-flash-lite-preview`, $0.25/$1.50 — cheapest tier)
+- **OpenAI:** GPT-5.4 Mini (`gpt-5.4-mini`, $0.75/$4.50), GPT-5.4 (`gpt-5.4`, $1.25/$10), GPT-5.5 (`gpt-5.5`, $5/$30 — premium tier, UI warns when selected). All reasoning models; `reasoning_effort: "low"` set for any `gpt-5*` to preserve output budget. Auto-caching on prompts ≥ 1024 tokens.
 
 **Per-response telemetry:** each assistant message renders a usage footer with input tokens, output tokens, cache hit rate, and computed cost in USD. Server captures usage from each SDK (Anthropic `finalMessage().usage`, OpenAI/Groq `stream_options: include_usage` final-chunk usage, Google `result.response.usageMetadata`), normalizes to `UsageMetadata`, and run-engine computes cost via [[lib/engine/pricing.ts]] table before emitting a `usage` SSE event. The Anthropic Claude Code Frontend Design Skill (vendored from `https://raw.githubusercontent.com/anthropics/claude-code/main/plugins/frontend-design/skills/frontend-design/SKILL.md`) is prepended to the system prompt to compensate for weaker design intuition. Llama on Groq has NO prompt caching — UI shows a quota warning when it's selected. OpenAI provides automatic caching for prompts ≥1024 tokens (50% off cached input). Google context caching available but minimum cacheable size (~4096 tokens) likely above current prompt size, so not used.
 
