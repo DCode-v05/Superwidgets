@@ -1,13 +1,15 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import type { EngineEvent, ChatMessage } from "@/lib/types/engine-widgets";
+import type { EngineEvent, ChatMessage, OutputFormat } from "@/lib/types/engine-widgets";
 import type { ProviderId } from "@/lib/engine/providers";
 import { uid } from "@/lib/utils";
 
 export interface SendOpts {
   providerId: ProviderId;
   useSkill: boolean;
+  pipeline: boolean;
+  outputFormat: OutputFormat;
 }
 
 interface UseChatReturn {
@@ -22,6 +24,7 @@ interface AssistantBuilder {
   id: string;
   text: string;
   widgetHtml: string | null;
+  usage: ChatMessage["usage"];
 }
 
 function applyEvent(builder: AssistantBuilder, ev: EngineEvent): boolean {
@@ -31,6 +34,9 @@ function applyEvent(builder: AssistantBuilder, ev: EngineEvent): boolean {
       return false;
     case "widget_html":
       builder.widgetHtml = ev.html;
+      return false;
+    case "usage":
+      builder.usage = ev.usage;
       return false;
     case "error":
       builder.text += `\n\n_Error: ${ev.message}_\n`;
@@ -103,6 +109,7 @@ export function useChat(): UseChatReturn {
       role: "assistant",
       text: "",
       widgetHtml: null,
+      outputFormat: opts.outputFormat,
       isStreaming: true,
     };
 
@@ -120,6 +127,8 @@ export function useChat(): UseChatReturn {
           history,
           providerId: opts.providerId,
           useSkill: opts.useSkill,
+          pipeline: opts.pipeline,
+          outputFormat: opts.outputFormat,
         }),
         signal: ctrl.signal,
       });
@@ -132,6 +141,7 @@ export function useChat(): UseChatReturn {
         id: assistantId,
         text: "",
         widgetHtml: null,
+        usage: undefined,
       };
 
       for await (const ev of parseSse(res.body)) {
@@ -144,6 +154,7 @@ export function useChat(): UseChatReturn {
                   ...m,
                   text: builder.text,
                   widgetHtml: builder.widgetHtml,
+                  usage: builder.usage,
                   isStreaming: !isDone,
                 }
               : m,

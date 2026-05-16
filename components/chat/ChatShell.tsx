@@ -8,25 +8,23 @@ import { ChatInput } from "./ChatInput";
 import { EmptyState } from "./EmptyState";
 import {
   ModeSelector,
-  selectionToProvider,
-  type ModeSelection,
+  selectionToOpts,
+  type ChatSelection,
 } from "./ModeSelector";
 
-const DEFAULT_SELECTION: ModeSelection = {
-  mode: "anthropic",
-  anthropicSub: "sonnet",
-  otherSub: "gemini-2.5",
+const DEFAULT_SELECTION: ChatSelection = {
+  providerId: "sonnet",
+  useSkill: false,
+  pipeline: false,
+  outputFormat: "html",
 };
 
 export function ChatShell() {
   const { messages, isStreaming, error, send, reset } = useChat();
-  const [selection, setSelection] = useState<ModeSelection>(DEFAULT_SELECTION);
+  const [selection, setSelection] = useState<ChatSelection>(DEFAULT_SELECTION);
 
   const sendWithMode = useCallback(
-    (message: string) => {
-      const opts = selectionToProvider(selection);
-      return send(message, opts);
-    },
+    (message: string) => send(message, selectionToOpts(selection)),
     [send, selection],
   );
 
@@ -54,11 +52,10 @@ export function ChatShell() {
     setSelection(DEFAULT_SELECTION);
   }, [reset]);
 
-  const showLlamaWarning = selection.mode === "other" && selection.otherSub === "llama";
+  const showLlamaWarning = selection.providerId === "llama";
 
   return (
     <div className="relative flex flex-col h-full">
-      {/* Header */}
       <header className="relative z-10 flex items-center justify-between border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-md px-6 md:px-10 py-4">
         <div className="flex items-baseline gap-3">
           <Sparkles className="h-5 w-5 text-accent translate-y-[3px]" strokeWidth={1.5} />
@@ -79,7 +76,6 @@ export function ChatShell() {
         </button>
       </header>
 
-      {/* Body */}
       <div className="relative z-10 flex-1 overflow-hidden flex flex-col">
         {messages.length === 0 ? (
           <EmptyState onPick={sendWithMode} />
@@ -88,7 +84,6 @@ export function ChatShell() {
         )}
       </div>
 
-      {/* Error banner */}
       {error && (
         <div className="relative z-10 mx-auto max-w-3xl w-full px-6 md:px-10 pb-2">
           <div className="rounded border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-700 dark:text-red-300">
@@ -97,7 +92,6 @@ export function ChatShell() {
         </div>
       )}
 
-      {/* Footer — selector + input */}
       <div className="relative z-10 border-t border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-md">
         <div className="mx-auto max-w-3xl px-6 md:px-10 py-4 space-y-3">
           <ModeSelector
@@ -109,7 +103,7 @@ export function ChatShell() {
             <div className="flex items-start gap-2 rounded border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
               <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" strokeWidth={1.5} />
               <span>
-                Llama on Groq has no prompt caching — every call pays full input price. Switch to Sonnet or Gemini to conserve quota.
+                Llama on Groq has no prompt caching — every call pays full input price.
               </span>
             </div>
           )}

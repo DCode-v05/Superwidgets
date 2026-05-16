@@ -1,0 +1,78 @@
+import type { OutputFormat } from "@/lib/types/engine-widgets";
+
+/**
+ * Wrap raw widget HTML in a standalone HTML document so it can be opened
+ * directly in a browser. Widget HTML is self-contained via inline styles,
+ * so we only need a minimal scaffold + a body background that matches the
+ * dark chat bubble (which the model designed against per the contrast rule).
+ */
+export function wrapWidgetAsDocument(widgetHtml: string, title?: string): string {
+  const safeTitle = (title ?? "Mini-BAP Widget").replace(/[<>&"']/g, "");
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${safeTitle}</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 48px 24px;
+      background: #1a1714;
+      font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    .bap-widget-container {
+      max-width: 820px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="bap-widget-container">
+${widgetHtml}
+  </div>
+</body>
+</html>
+`;
+}
+
+/** Strip leading/trailing markdown code fences (defensive — model is told not to include them). */
+function stripCodeFences(code: string): string {
+  let s = code.trim();
+  s = s.replace(/^```(?:tsx|jsx|typescript|ts|javascript|js)?\s*\n/, "");
+  s = s.replace(/\n```\s*$/, "");
+  return s;
+}
+
+function triggerDownload(content: string, ext: string, mime: string): void {
+  const blob = new Blob([content], { type: `${mime};charset=utf-8` });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+  a.href = url;
+  a.download = `bap-widget-${ts}.${ext}`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/** Download the widget — HTML mode → standalone .html doc; React mode → raw .tsx. */
+export function downloadWidget(content: string, format: OutputFormat): void {
+  if (format === "react") {
+    triggerDownload(stripCodeFences(content), "tsx", "text/plain");
+  } else {
+    triggerDownload(wrapWidgetAsDocument(content), "html", "text/html");
+  }
+}
+
+/** Copy the widget source to the clipboard (HTML or TSX, no wrapper). */
+export async function copyWidget(content: string, format: OutputFormat): Promise<void> {
+  const text = format === "react" ? stripCodeFences(content) : content;
+  await navigator.clipboard.writeText(text);
+}

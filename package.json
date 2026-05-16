@@ -20,8 +20,10 @@
     "openai": "^4.70.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-live": "^4.1.8",
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^15.6.1",
+    "sucrase": "^3.35.0",
     "remark-gfm": "^4.0.0",
     "tailwind-merge": "^2.6.0"
   },
