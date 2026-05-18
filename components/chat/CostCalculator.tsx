@@ -5,27 +5,8 @@ import { createPortal } from "react-dom";
 import { Calculator as CalcIcon, X } from "lucide-react";
 import { PROVIDER_IDS, type ProviderId } from "@/lib/engine/providers";
 import { estimateCost, getPricing } from "@/lib/engine/pricing";
+import { MODEL_INFO } from "@/lib/engine/model-info";
 import { cn } from "@/lib/utils";
-
-const LABELS: Record<ProviderId, string> = {
-  sonnet: "Sonnet 4.6",
-  haiku: "Haiku 4.5",
-  "gemini-3": "Gemini 3 Flash",
-  "gemini-3.1": "Gemini 3.1 Flash Lite",
-  "gpt-5.4-mini": "GPT-5.4 Mini",
-  "gpt-5.4": "GPT-5.4",
-  "gpt-5.5": "GPT-5.5",
-};
-
-const FAMILY: Record<ProviderId, string> = {
-  sonnet: "Anthropic",
-  haiku: "Anthropic",
-  "gemini-3": "Google",
-  "gemini-3.1": "Google",
-  "gpt-5.4-mini": "OpenAI",
-  "gpt-5.4": "OpenAI",
-  "gpt-5.5": "OpenAI",
-};
 
 const PRESETS: Array<{ label: string; input: number; output: number }> = [
   { label: "Tiny", input: 500, output: 100 },
@@ -61,12 +42,14 @@ export function CostCalculator() {
 
   const rows = useMemo(() => {
     const items = PROVIDER_IDS.map((id) => {
+      const info = MODEL_INFO[id];
       const p = getPricing(id);
       const cost = estimateCost(id, inputTokens, outputTokens, cacheHitRate);
       return {
         id,
-        label: LABELS[id],
-        family: FAMILY[id],
+        label: info.label,
+        family: info.family,
+        bestFor: info.bestFor,
         cost,
         rates: p,
       };
@@ -223,9 +206,12 @@ export function CostCalculator() {
                               </span>
                             )}
                           </div>
-                          <div className="text-[10px] text-[var(--secondary)] font-mono mt-0.5">
-                            {row.rates.input.toFixed(2)}/{row.rates.output.toFixed(2)} ·
-                            cached {row.rates.cachedInput.toFixed(3)} per MTok
+                          <div className="text-[11px] text-[var(--secondary)] mt-1 leading-snug max-w-[36ch]">
+                            {row.bestFor}
+                          </div>
+                          <div className="text-[10px] text-[var(--secondary)] font-mono mt-1 opacity-70">
+                            ${row.rates.input.toFixed(2)}/${row.rates.output.toFixed(2)} ·
+                            cached ${row.rates.cachedInput.toFixed(3)} per MTok
                           </div>
                         </td>
                         <td className="p-3 text-right font-mono">

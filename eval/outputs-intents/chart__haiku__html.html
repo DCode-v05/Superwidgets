@@ -1,0 +1,59 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>chart · haiku</title>
+<style>body{margin:0;padding:48px 24px;background:#1a1714;font-family:ui-sans-serif,system-ui;display:flex;justify-content:center;align-items:flex-start;min-height:100vh}
+.wrap{max-width:820px;width:100%}.lbl{font-family:ui-monospace,monospace;font-size:11px;color:#9b948a;text-transform:uppercase;letter-spacing:.2em;margin-bottom:14px}</style></head>
+<body><div class="wrap"><div class="lbl">chart · haiku · html</div><div style="background:#fafaf8;color:#1a1a1a;padding:28px;border-radius:12px;font-family:'Georgia',serif">
+  <div style="margin-bottom:24px">
+    <h3 style="margin:0 0 6px;font-size:22px;font-weight:700;letter-spacing:-0.6px">Revenue Trend</h3>
+    <p style="margin:0;font-size:13px;color:#666">Last 6 months</p>
+  </div>
+  
+  <svg viewBox="0 0 400 220" style="width:100%;max-width:100%;overflow:visible">
+    <!-- Grid lines -->
+    <line x1="40" y1="180" x2="380" y2="180" stroke="#e0ddd9" stroke-width="1"/>
+    <line x1="40" y1="140" x2="380" y2="140" stroke="#e0ddd9" stroke-width="1"/>
+    <line x1="40" y1="100" x2="380" y2="100" stroke="#e0ddd9" stroke-width="1"/>
+    <line x1="40" y1="60" x2="380" y2="60" stroke="#e0ddd9" stroke-width="1"/>
+    <line x1="40" y1="20" x2="380" y2="20" stroke="#e0ddd9" stroke-width="1"/>
+    
+    <!-- Axes -->
+    <line x1="40" y1="20" x2="40" y2="180" stroke="#999" stroke-width="2"/>
+    <line x1="40" y1="180" x2="380" y2="180" stroke="#999" stroke-width="2"/>
+    
+    <!-- Y-axis labels -->
+    <text x="32" y="185" font-size="11" fill="#666" text-anchor="end">$0K</text>
+    <text x="32" y="145" font-size="11" fill="#666" text-anchor="end">$25K</text>
+    <text x="32" y="105" font-size="11" fill="#666" text-anchor="end">$50K</text>
+    <text x="32" y="65" font-size="11" fill="#666" text-anchor="end">$75K</text>
+    <text x="32" y="25" font-size="11" fill="#666" text-anchor="end">$100K</text>
+    
+    <!-- Area fill (gradient effect via polygon) -->
+    <polygon points="50,145 90,110 130,95 170,75 210,60 250,50 290,55 330,35 370,40 370,180 50,180" 
+             fill="#EC3B4A" opacity="0.15"/>
+    
+    <!-- Data line -->
+    <polyline points="50,145 90,110 130,95 170,75 210,60 250,50 290,55 330,35 370,40" 
+              fill="none" stroke="#EC3B4A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- Data points -->
+    <circle cx="50" cy="145" r="4" fill="#EC3B4A"/>
+    <circle cx="90" cy="110" r="4" fill="#EC3B4A"/>
+    <circle cx="130" cy="95" r="4" fill="#EC3B4A"/>
+    <circle cx="170" cy="75" r="4" fill="#EC3B4A"/>
+    <circle cx="210" cy="60" r="4" fill="#EC3B4A"/>
+    <circle cx="250" cy="50" r="4" fill="#EC3B4A"/>
+    <circle cx="290" cy="55" r="4" fill="#EC3B4A"/>
+    <circle cx="330" cy="35" r="4" fill="#EC3B4A"/>
+    <circle cx="370" cy="40" r="4" fill="#EC3B4A" stroke="#fafaf8" stroke-width="2"/>
+    
+    <!-- X-axis labels -->
+    <text x="50" y="200" font-size="11" fill="#666" text-anchor="middle">Jan</text>
+    <text x="130" y="200" font-size="11" fill="#666" text-anchor="middle">Feb</text>
+    <text x="210" y="200" font-size="11" fill="#666" text-anchor="middle">Mar</text>
+    <text x="290" y="200" font-size="11" fill="#666" text-anchor="middle">Apr</text>
+    <text x="370" y="200" font-size="11" fill="#666" text-anchor="middle">Jun</text>
+  </svg>
+  
+  <div style="margin-top:20px;padding-top:16px;border-top:1px solid #e0ddd9;font-size:13px;color:#666">
+    <strong style="color:#1a1a1a">+38% MoM</strong> growth through Q2, with a small dip in May.
+  </div>
+</div></div></body></html>

@@ -9,6 +9,11 @@ import { SKILL as CHART } from "./chart";
 import { SKILL as SOURCE_CARDS } from "./source_cards";
 import { SKILL as CODE_BLOCK } from "./code_block";
 import { SKILL as INLINE_BANNER } from "./inline_banner";
+import { SKILL as FLOWCHART } from "./flowchart";
+import { SKILL as KPI_TILES } from "./kpi_tiles";
+import { SKILL as TIMELINE } from "./timeline";
+import { SKILL as KANBAN } from "./kanban";
+import { SKILL as PRICING_TABLE } from "./pricing_table";
 import { FRONTEND_DESIGN_SKILL } from "../frontend-design-skill";
 
 export type WidgetIntent =
@@ -21,7 +26,12 @@ export type WidgetIntent =
   | "chart"
   | "source_cards"
   | "code_block"
-  | "inline_banner";
+  | "inline_banner"
+  | "flowchart"
+  | "kpi_tiles"
+  | "timeline"
+  | "kanban"
+  | "pricing_table";
 
 export const WIDGET_INTENTS: WidgetIntent[] = [
   "chips",
@@ -34,6 +44,11 @@ export const WIDGET_INTENTS: WidgetIntent[] = [
   "source_cards",
   "code_block",
   "inline_banner",
+  "flowchart",
+  "kpi_tiles",
+  "timeline",
+  "kanban",
+  "pricing_table",
 ];
 
 const SKILLS: Record<WidgetIntent, string> = {
@@ -47,6 +62,11 @@ const SKILLS: Record<WidgetIntent, string> = {
   source_cards: SOURCE_CARDS,
   code_block: CODE_BLOCK,
   inline_banner: INLINE_BANNER,
+  flowchart: FLOWCHART,
+  kpi_tiles: KPI_TILES,
+  timeline: TIMELINE,
+  kanban: KANBAN,
+  pricing_table: PRICING_TABLE,
 };
 
 /**

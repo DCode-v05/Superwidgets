@@ -1,0 +1,30 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>code_block · gpt-4o-mini</title>
+<style>body{margin:0;padding:48px 24px;background:#1a1714;font-family:ui-sans-serif,system-ui;display:flex;justify-content:center;align-items:flex-start;min-height:100vh}
+.wrap{max-width:820px;width:100%}.lbl{font-family:ui-monospace,monospace;font-size:11px;color:#9b948a;text-transform:uppercase;letter-spacing:.2em;margin-bottom:14px}</style></head>
+<body><div class="wrap"><div class="lbl">code_block · gpt-4o-mini · html</div><div style="background:#0f1116;color:#e6e6e6;border-radius:14px;padding:20px;font-family:Courier New, monospace">
+  <h3 style="margin:0 0 14px;font-size:20px;font-weight:700">Exponential Backoff URL Fetcher</h3>
+  <pre style="margin:0;font-size:14px;line-height:1.4">
+import time
+import requests
+
+def fetch_with_retries(url, max_retries=5):
+    retries = 0
+    backoff_time = 1  # Start with a 1 second backoff
+    
+    while retries < max_retries:
+        try:
+            response = requests.get(url)
+            response.raise_for_status()  # Raise an error for bad responses
+            return response.text
+        except requests.RequestException as e:
+            print(f"Error occurred: {e}. Retrying in {backoff_time}s...")
+            time.sleep(backoff_time)
+            backoff_time *= 2  # Double the backoff time
+            retries += 1
+            
+    raise Exception("Maximum retries exceeded")
+
+# Example usage
+# content = fetch_with_retries("https://example.com")
+  </pre>
+</div></div></body></html>

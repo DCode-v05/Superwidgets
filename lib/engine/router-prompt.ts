@@ -17,6 +17,11 @@ Valid intents (pick exactly one):
 - source_cards
 - code_block
 - inline_banner
+- flowchart
+- kpi_tiles
+- timeline
+- kanban
+- pricing_table
 
 ## When to pick each
 
@@ -30,6 +35,11 @@ Valid intents (pick exactly one):
 - \`source_cards\` — citations / research / "tell me about X with sources"
 - \`code_block\` — code snippet, query, config, or command
 - \`inline_banner\` — short status / outcome notice (success, warn, info)
+- \`flowchart\` — process flow with branches / decision diamonds ("how does X work", "trace the request")
+- \`kpi_tiles\` — single-point-in-time metrics dashboard ("show me key metrics", "snapshot")
+- \`timeline\` — chronological events with dates ("history of X", "roadmap")
+- \`kanban\` — multi-state task board ("sprint board", "what's in progress")
+- \`pricing_table\` — tiered subscription pricing ("compare plans", "show pricing")
 
 ## Tie-breaking rules
 

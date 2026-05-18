@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import type { ChatMessage } from "@/lib/types/engine-widgets";
 import { InlineTextRenderer } from "./InlineTextRenderer";
 import { HtmlBubble } from "./HtmlBubble";
+import { TypedBubble } from "./TypedBubble";
 
 // react-live + sucrase are ~200KB; only load them when React mode is in use.
 const ReactLiveBubble = dynamic(
@@ -24,9 +25,11 @@ interface OutputSystemProps {
 
 export function OutputSystem({ message }: OutputSystemProps) {
   const hasText = message.text.length > 0;
-  const hasWidget = message.widgetHtml !== null;
+  const hasHtmlWidget = message.widgetHtml !== null;
+  const hasTypedWidgets = (message.typedWidgets?.length ?? 0) > 0;
+  const hasAnyWidget = hasHtmlWidget || hasTypedWidgets;
 
-  if (!hasText && !hasWidget) {
+  if (!hasText && !hasAnyWidget) {
     return (
       <div className="flex items-center gap-2 text-sm text-gray-400 dark:text-text-secondary">
         <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
@@ -37,15 +40,17 @@ export function OutputSystem({ message }: OutputSystemProps) {
     );
   }
 
-  const showCursor = message.isStreaming === true && !hasWidget;
+  const showCursor = message.isStreaming === true && !hasAnyWidget;
+  const format = message.outputFormat ?? "html";
 
   return (
     <div className="space-y-3">
       {hasText && (
         <InlineTextRenderer text={message.text} isStreaming={showCursor} />
       )}
-      {hasWidget && (
-        message.outputFormat === "react"
+      {hasTypedWidgets && <TypedBubble widgets={message.typedWidgets!} />}
+      {hasHtmlWidget && !hasTypedWidgets && (
+        format === "react"
           ? <ReactLiveBubble code={message.widgetHtml!} />
           : <HtmlBubble html={message.widgetHtml!} />
       )}

@@ -1,0 +1,31 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>inline_banner · haiku</title>
+<style>body{margin:0;padding:48px 24px;background:#1a1714;font-family:ui-sans-serif,system-ui;display:flex;justify-content:center;align-items:flex-start;min-height:100vh}
+.wrap{max-width:820px;width:100%}.lbl{font-family:ui-monospace,monospace;font-size:11px;color:#9b948a;text-transform:uppercase;letter-spacing:.2em;margin-bottom:14px}</style></head>
+<body><div class="wrap"><div class="lbl">inline_banner · haiku · html</div><div style="background:#0f1116;color:#e6e6e6;border-radius:14px;padding:24px;font-family:'Courier New',monospace;max-width:420px">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+    <div style="width:40px;height:40px;border-radius:50%;background:#EC3B4A;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <span style="font-size:24px;color:#fff">✓</span>
+    </div>
+    <div>
+      <div style="font-size:14px;font-weight:600;color:#fff;letter-spacing:0.5px">DEPLOY CONFIRMED</div>
+      <div style="font-size:12px;color:#999;margin-top:2px">Production environment</div>
+    </div>
+  </div>
+  
+  <div style="background:#16181f;border:1px solid #333;border-radius:8px;padding:14px;margin-bottom:16px;font-size:12px;line-height:1.5">
+    <div style="color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Status</div>
+    <div style="color:#4ade80;font-weight:600;margin-bottom:12px">✓ Live</div>
+    <div style="color:#ccc;font-size:11px">All systems nominal. Your changes are now serving production traffic.</div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <button data-bap-prompt="Show me deployment metrics" 
+            style="background:#EC3B4A;color:#fff;border:0;padding:12px;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">
+      View Metrics
+    </button>
+    <button data-bap-prompt="Roll back this deploy" 
+            style="background:transparent;color:#EC3B4A;border:1px solid #EC3B4A;padding:12px;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">
+      Rollback
+    </button>
+  </div>
+</div></div></body></html>

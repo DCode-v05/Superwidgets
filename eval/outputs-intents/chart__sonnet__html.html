@@ -1,0 +1,101 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>chart · sonnet</title>
+<style>body{margin:0;padding:48px 24px;background:#1a1714;font-family:ui-sans-serif,system-ui;display:flex;justify-content:center;align-items:flex-start;min-height:100vh}
+.wrap{max-width:820px;width:100%}.lbl{font-family:ui-monospace,monospace;font-size:11px;color:#9b948a;text-transform:uppercase;letter-spacing:.2em;margin-bottom:14px}</style></head>
+<body><div class="wrap"><div class="lbl">chart · sonnet · html</div><div style="background:#12110f;color:#e8e4de;border-radius:16px;padding:24px;font-family:'Courier New',monospace;max-width:520px">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+    <div>
+      <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:2px">Revenue Trend</div>
+      <div style="font-size:22px;font-weight:700;color:#fff;margin-top:4px">Last 6 Months</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:11px;color:#888">Total</div>
+      <div style="font-size:18px;font-weight:700;color:#EC3B4A">$2.46M</div>
+    </div>
+  </div>
+
+  <svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;margin-top:16px">
+    <!-- Grid lines -->
+    <line x1="40" y1="20" x2="40" y2="180" stroke="#2a2825" stroke-width="1"/>
+    <line x1="40" y1="20" x2="390" y2="20" stroke="#2a2825" stroke-width="1" stroke-dasharray="4,4"/>
+    <line x1="40" y1="60" x2="390" y2="60" stroke="#2a2825" stroke-width="1" stroke-dasharray="4,4"/>
+    <line x1="40" y1="100" x2="390" y2="100" stroke="#2a2825" stroke-width="1" stroke-dasharray="4,4"/>
+    <line x1="40" y1="140" x2="390" y2="140" stroke="#2a2825" stroke-width="1" stroke-dasharray="4,4"/>
+    <line x1="40" y1="180" x2="390" y2="180" stroke="#2a2825" stroke-width="1"/>
+
+    <!-- Y-axis labels -->
+    <text x="32" y="24" text-anchor="end" fill="#666" font-size="10" font-family="Courier New">500k</text>
+    <text x="32" y="64" text-anchor="end" fill="#666" font-size="10" font-family="Courier New">400k</text>
+    <text x="32" y="104" text-anchor="end" fill="#666" font-size="10" font-family="Courier New">300k</text>
+    <text x="32" y="144" text-anchor="end" fill="#666" font-size="10" font-family="Courier New">200k</text>
+    <text x="32" y="184" text-anchor="end" fill="#666" font-size="10" font-family="Courier New">100k</text>
+
+    <!-- Area fill under line -->
+    <!-- Points: Jan(305k→y152), Feb(340k→y124), Mar(370k→y100), Apr(390k→y84), May(430k→y52), Jun(485k→y28) -->
+    <!-- y = 180 - ((val-100)/400)*160 -->
+    <defs>
+      <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#EC3B4A" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="#EC3B4A" stop-opacity="0.02"/>
+      </linearGradient>
+    </defs>
+    <polygon
+      points="80,152 140,124 200,100 260,84 320,52 380,28 380,180 80,180"
+      fill="url(#areaGrad)"/>
+
+    <!-- Line -->
+    <polyline
+      points="80,152 140,124 200,100 260,84 320,52 380,28"
+      fill="none"
+      stroke="#EC3B4A"
+      stroke-width="2.5"
+      stroke-linejoin="round"
+      stroke-linecap="round"/>
+
+    <!-- Data points -->
+    <circle cx="80"  cy="152" r="5" fill="#12110f" stroke="#EC3B4A" stroke-width="2.5"/>
+    <circle cx="140" cy="124" r="5" fill="#12110f" stroke="#EC3B4A" stroke-width="2.5"/>
+    <circle cx="200" cy="100" r="5" fill="#12110f" stroke="#EC3B4A" stroke-width="2.5"/>
+    <circle cx="260" cy="84"  r="5" fill="#12110f" stroke="#EC3B4A" stroke-width="2.5"/>
+    <circle cx="320" cy="52"  r="5" fill="#12110f" stroke="#EC3B4A" stroke-width="2.5"/>
+    <circle cx="380" cy="28"  r="6" fill="#EC3B4A" stroke="#EC3B4A" stroke-width="2.5"/>
+
+    <!-- Value labels -->
+    <text x="80"  y="144" text-anchor="middle" fill="#aaa" font-size="10" font-family="Courier New">305k</text>
+    <text x="140" y="116" text-anchor="middle" fill="#aaa" font-size="10" font-family="Courier New">340k</text>
+    <text x="200" y="92"  text-anchor="middle" fill="#aaa" font-size="10" font-family="Courier New">370k</text>
+    <text x="260" y="76"  text-anchor="middle" fill="#aaa" font-size="10" font-family="Courier New">390k</text>
+    <text x="320" y="44"  text-anchor="middle" fill="#aaa" font-size="10" font-family="Courier New">430k</text>
+    <text x="380" y="20"  text-anchor="middle" fill="#EC3B4A" font-size="10" font-family="Courier New" font-weight="bold">485k</text>
+
+    <!-- X-axis labels -->
+    <text x="80"  y="198" text-anchor="middle" fill="#666" font-size="10" font-family="Courier New">JAN</text>
+    <text x="140" y="198" text-anchor="middle" fill="#666" font-size="10" font-family="Courier New">FEB</text>
+    <text x="200" y="198" text-anchor="middle" fill="#666" font-size="10" font-family="Courier New">MAR</text>
+    <text x="260" y="198" text-anchor="middle" fill="#666" font-size="10" font-family="Courier New">APR</text>
+    <text x="320" y="198" text-anchor="middle" fill="#666" font-size="10" font-family="Courier New">MAY</text>
+    <text x="380" y="198" text-anchor="middle" fill="#EC3B4A" font-size="10" font-family="Courier New" font-weight="bold">JUN</text>
+  </svg>
+
+  <!-- Stats row -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:16px;padding-top:16px;border-top:1px solid #2a2825">
+    <div>
+      <div style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:1px">MoM Growth</div>
+      <div style="font-size:16px;font-weight:700;color:#4ade80;margin-top:2px">+12.8%</div>
+    </div>
+    <div>
+      <div style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:1px">Best Month</div>
+      <div style="font-size:16px;font-weight:700;color:#fff;margin-top:2px">June</div>
+    </div>
+    <div>
+      <div style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:1px">6M Growth</div>
+      <div style="font-size:16px;font-weight:700;color:#EC3B4A;margin-top:2px">+59.0%</div>
+    </div>
+  </div>
+
+  <!-- Follow-up chips -->
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">
+    <button data-bap-prompt="Break down revenue by product category" style="background:#1e1c1a;color:#ccc;border:1px solid #333;padding:7px 14px;border-radius:20px;font-size:12px;font-family:'Courier New',monospace;cursor:pointer">By category</button>
+    <button data-bap-prompt="Compare this to last year's revenue trend" style="background:#1e1c1a;color:#ccc;border:1px solid #333;padding:7px 14px;border-radius:20px;font-size:12px;font-family:'Courier New',monospace;cursor:pointer">vs. Last year</button>
+    <button data-bap-prompt="Forecast next 3 months of revenue" style="background:#1e1c1a;color:#ccc;border:1px solid #333;padding:7px 14px;border-radius:20px;font-size:12px;font-family:'Courier New',monospace;cursor:pointer">Forecast →</button>
+  </div>
+</div></div></body></html>

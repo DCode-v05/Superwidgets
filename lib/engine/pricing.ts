@@ -24,11 +24,11 @@ export interface ProviderPricing {
 const PRICING: Record<ProviderId, ProviderPricing> = {
   sonnet: { input: 3.00, output: 15.00, cachedInput: 0.30 },
   haiku: { input: 1.00, output: 5.00, cachedInput: 0.10 },
-  "gemini-3": { input: 0.50, output: 3.00, cachedInput: 0.05 },
-  "gemini-3.1": { input: 0.25, output: 1.50, cachedInput: 0.025 },
-  "gpt-5.4-mini": { input: 0.75, output: 4.50, cachedInput: 0.075 },
-  "gpt-5.4": { input: 2.50, output: 15.00, cachedInput: 0.25 },
-  "gpt-5.5": { input: 5.00, output: 30.00, cachedInput: 0.50 },
+  "gemini-flash": { input: 0.30, output: 2.50, cachedInput: 0.075 },
+  "gemini-flash-lite": { input: 0.075, output: 0.30, cachedInput: 0.01875 },
+  "gpt-4o-mini": { input: 0.15, output: 0.60, cachedInput: 0.075 },
+  "gpt-4o": { input: 2.50, output: 10.00, cachedInput: 1.25 },
+  "gpt-5": { input: 1.25, output: 10.00, cachedInput: 0.125 },
 };
 
 export function getPricing(providerId: ProviderId): ProviderPricing {

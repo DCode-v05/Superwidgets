@@ -54,7 +54,7 @@ export function ChatShell() {
     setSelection(DEFAULT_SELECTION);
   }, [reset]);
 
-  const showExpensiveWarning = selection.providerId === "gpt-5.5";
+  const showExpensiveWarning = selection.providerId === "gpt-5";
 
   return (
     <div className="relative flex flex-col h-full">
@@ -117,7 +117,7 @@ export function ChatShell() {
             <div className="flex items-start gap-2 rounded border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
               <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" strokeWidth={1.5} />
               <span>
-                GPT-5.5 is the premium tier — $5/$30 per MTok input/output, roughly 4× the cost of GPT-5.4. Use sparingly for the hardest queries.
+                GPT-5 is the premium tier — pricier per token than GPT-4o Mini or the Gemini Flash lite line, and runs with low reasoning effort by default. Use selectively for the hardest queries.
               </span>
             </div>
           )}

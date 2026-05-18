@@ -8,30 +8,30 @@ export type { ProviderInvoker } from "./types";
 export type ProviderId =
   | "sonnet"
   | "haiku"
-  | "gemini-3"
-  | "gemini-3.1"
-  | "gpt-5.4-mini"
-  | "gpt-5.4"
-  | "gpt-5.5";
+  | "gemini-flash"
+  | "gemini-flash-lite"
+  | "gpt-4o-mini"
+  | "gpt-4o"
+  | "gpt-5";
 
 export const PROVIDER_IDS: ProviderId[] = [
   "sonnet",
   "haiku",
-  "gemini-3",
-  "gemini-3.1",
-  "gpt-5.4-mini",
-  "gpt-5.4",
-  "gpt-5.5",
+  "gemini-flash",
+  "gemini-flash-lite",
+  "gpt-4o-mini",
+  "gpt-4o",
+  "gpt-5",
 ];
 
 const REGISTRY: Record<ProviderId, ProviderInvoker> = {
   sonnet: createAnthropicStreamer("claude-sonnet-4-6"),
   haiku: createAnthropicStreamer("claude-haiku-4-5-20251001"),
-  "gemini-3": createGoogleStreamer("gemini-3-flash-preview"),
-  "gemini-3.1": createGoogleStreamer("gemini-3.1-flash-lite-preview"),
-  "gpt-5.4-mini": createOpenAIStreamer("gpt-5.4-mini"),
-  "gpt-5.4": createOpenAIStreamer("gpt-5.4"),
-  "gpt-5.5": createOpenAIStreamer("gpt-5.5"),
+  "gemini-flash": createGoogleStreamer("gemini-2.5-flash"),
+  "gemini-flash-lite": createGoogleStreamer("gemini-2.0-flash-lite"),
+  "gpt-4o-mini": createOpenAIStreamer("gpt-4o-mini"),
+  "gpt-4o": createOpenAIStreamer("gpt-4o"),
+  "gpt-5": createOpenAIStreamer("gpt-5"),
 };
 
 export function getProvider(id: ProviderId): ProviderInvoker {

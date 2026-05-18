@@ -1,0 +1,95 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>code_block · sonnet</title>
+<style>body{margin:0;padding:48px 24px;background:#1a1714;font-family:ui-sans-serif,system-ui;display:flex;justify-content:center;align-items:flex-start;min-height:100vh}
+.wrap{max-width:820px;width:100%}.lbl{font-family:ui-monospace,monospace;font-size:11px;color:#9b948a;text-transform:uppercase;letter-spacing:.2em;margin-bottom:14px}</style></head>
+<body><div class="wrap"><div class="lbl">code_block · sonnet · html</div><div style="background:#1a1a1a;color:#e6e6e6;border-radius:14px;padding:24px;font-family:'Courier New',monospace">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+    <div style="background:#EC3B4A;width:10px;height:10px;border-radius:50%"></div>
+    <div style="background:#f0a500;width:10px;height:10px;border-radius:50%"></div>
+    <div style="background:#3cba54;width:10px;height:10px;border-radius:50%"></div>
+    <span style="color:#666;font-size:12px;margin-left:6px">fetch_with_backoff.py</span>
+  </div>
+<pre style="margin:0;overflow-x:auto;font-size:13px;line-height:1.7;color:#e6e6e6"><code><span style="color:#7ec8e3">import</span> time
+<span style="color:#7ec8e3">import</span> random
+<span style="color:#7ec8e3">import</span> urllib.request
+<span style="color:#7ec8e3">import</span> urllib.error
+<span style="color:#7ec8e3">from</span> typing <span style="color:#7ec8e3">import</span> Optional
+
+<span style="color:#666"># Errors worth retrying on</span>
+RETRYABLE_CODES = {429, 500, 502, 503, 504}
+
+
+<span style="color:#f0a500">def</span> <span style="color:#3cba54">fetch_with_backoff</span>(
+    url: str,
+    *,
+    max_retries: int = <span style="color:#b5cea8">5</span>,
+    base_delay: float = <span style="color:#b5cea8">1.0</span>,
+    max_delay: float = <span style="color:#b5cea8">60.0</span>,
+    jitter: bool = <span style="color:#b5cea8">True</span>,
+    timeout: Optional[float] = <span style="color:#b5cea8">10.0</span>,
+) -> bytes:
+    <span style="color:#ce9178">"""
+    Fetch *url* with exponential-backoff retries.
+
+    Args:
+        url         – Target URL.
+        max_retries – Maximum number of retry attempts.
+        base_delay  – Initial wait in seconds (doubles each round).
+        max_delay   – Upper ceiling on wait time.
+        jitter      – Add randomness to avoid thundering herd.
+        timeout     – Per-request socket timeout in seconds.
+
+    Returns:
+        Raw response body as bytes.
+
+    Raises:
+        urllib.error.URLError on permanent failure or exhausted retries.
+    """</span>
+    attempt = <span style="color:#b5cea8">0</span>
+
+    <span style="color:#f0a500">while</span> <span style="color:#7ec8e3">True</span>:
+        <span style="color:#f0a500">try</span>:
+            <span style="color:#f0a500">with</span> urllib.request.urlopen(url, timeout=timeout) <span style="color:#f0a500">as</span> resp:
+                <span style="color:#f0a500">return</span> resp.read()
+
+        <span style="color:#f0a500">except</span> urllib.error.HTTPError <span style="color:#f0a500">as</span> exc:
+            <span style="color:#666"># Don't retry client errors (4xx) except 429</span>
+            <span style="color:#f0a500">if</span> exc.code <span style="color:#f0a500">not in</span> RETRYABLE_CODES <span style="color:#f0a500">or</span> attempt >= max_retries:
+                <span style="color:#f0a500">raise</span>
+            last_exc = exc
+
+        <span style="color:#f0a500">except</span> urllib.error.URLError <span style="color:#f0a500">as</span> exc:
+            <span style="color:#666"># Network-level failure — always retry</span>
+            <span style="color:#f0a500">if</span> attempt >= max_retries:
+                <span style="color:#f0a500">raise</span>
+            last_exc = exc
+
+        <span style="color:#666"># --- Backoff math ---</span>
+        delay = <span style="color:#b5cea8">min</span>(base_delay * (<span style="color:#b5cea8">2</span> ** attempt), max_delay)
+        <span style="color:#f0a500">if</span> jitter:
+            delay *= random.uniform(<span style="color:#b5cea8">0.5</span>, <span style="color:#b5cea8">1.5</span>)
+
+        <span style="color:#b5cea8">print</span>(
+            <span style="color:#ce9178">f"Attempt <span style="color:#7ec8e3">{attempt + 1}</span> failed "
+            f"(<span style="color:#7ec8e3">{last_exc}</span>). "
+            f"Retrying in <span style="color:#7ec8e3">{delay:.1f}</span>s…"</span>
+        )
+        time.sleep(delay)
+        attempt += <span style="color:#b5cea8">1</span>
+
+
+<span style="color:#666"># ── Quick demo ────────────────────────────────────────────────────────────</span>
+<span style="color:#f0a500">if</span> __name__ == <span style="color:#ce9178">"__main__"</span>:
+    body = fetch_with_backoff(
+        <span style="color:#ce9178">"https://httpbin.org/get"</span>,
+        max_retries=<span style="color:#b5cea8">4</span>,
+        base_delay=<span style="color:#b5cea8">0.5</span>,
+    )
+    <span style="color:#b5cea8">print</span>(<span style="color:#ce9178">f"Got <span style="color:#7ec8e3">{len(body)}</span> bytes"</span>)
+</code></pre>
+  <div style="margin-top:18px;padding-top:14px;border-top:1px solid #333;display:flex;gap:10px;flex-wrap:wrap">
+    <button data-bap-prompt="Adapt this to use the requests library instead" style="background:#1e1e1e;color:#7ec8e3;border:1px solid #333;padding:8px 14px;border-radius:6px;font-family:'Courier New',monospace;font-size:12px;cursor:pointer">→ Use requests lib</button>
+    <button data-bap-prompt="Add async support with aiohttp and exponential backoff" style="background:#1e1e1e;color:#7ec8e3;border:1px solid #333;padding:8px 14px;border-radius:6px;font-family:'Courier New',monospace;font-size:12px;cursor:pointer">→ Make it async</button>
+    <button data-bap-prompt="Write unit tests for fetch_with_backoff using pytest and unittest.mock" style="background:#1e1e1e;color:#7ec8e3;border:1px solid #333;padding:8px 14px;border-radius:6px;font-family:'Courier New',monospace;font-size:12px;cursor:pointer">→ Write unit tests</button>
+    <button data-bap-prompt="Explain the jitter strategy and why it prevents thundering herd" style="background:#1e1e1e;color:#7ec8e3;border:1px solid #333;padding:8px 14px;border-radius:6px;font-family:'Courier New',monospace;font-size:12px;cursor:pointer">→ Explain jitter</button>
+  </div>
+</div></div></body></html>

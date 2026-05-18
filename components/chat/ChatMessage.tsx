@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Copy, Check } from "lucide-react";
+import { Download, Copy, Check, AlertOctagon } from "lucide-react";
 import type { ChatMessage as ChatMessageType, UsageReport, OutputFormat } from "@/lib/types/engine-widgets";
 import { OutputSystem } from "@/components/output/OutputSystem";
 import { downloadWidget, copyWidget } from "@/lib/download-widget";
+import { MODEL_INFO } from "@/lib/engine/model-info";
+import type { ProviderId } from "@/lib/engine/providers";
+import { AgentDecisionPanel } from "./AgentDecisionPanel";
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -35,9 +38,15 @@ export function ChatMessage({ message }: ChatMessageProps) {
           BAP
         </div>
         <div className="flex-1 flex flex-col gap-1.5">
+          {message.agentDecision && (
+            <AgentDecisionPanel decision={message.agentDecision} />
+          )}
           <div className="rounded-tl-md rounded-tr-2xl rounded-bl-2xl rounded-br-2xl bg-[var(--surface)] border border-[var(--border)] px-5 py-4">
             <OutputSystem message={message} />
           </div>
+          {message.error && (
+            <ApiErrorBanner error={message.error} />
+          )}
           {message.widgetHtml && !message.isStreaming && (
             <WidgetActions
               content={message.widgetHtml}
@@ -110,7 +119,32 @@ function WidgetActions({ content, format }: { content: string; format: OutputFor
   );
 }
 
-function formatTokens(n: number): string {
+function ApiErrorBanner({ error }: { error: NonNullable<ChatMessageType["error"]> }) {
+  return (
+    <div
+      role="alert"
+      className="flex items-start gap-2.5 rounded-lg border border-red-500/40 bg-red-500/[0.06] px-3.5 py-2.5"
+    >
+      <AlertOctagon className="h-4 w-4 mt-0.5 shrink-0 text-red-600 dark:text-red-400" strokeWidth={1.75} />
+      <div className="flex-1 min-w-0">
+        <div className="text-[12px] font-semibold text-red-700 dark:text-red-300 leading-snug">
+          {error.message}
+        </div>
+        {error.hint && (
+          <div className="mt-0.5 text-[11px] text-red-700/85 dark:text-red-300/80 leading-relaxed">
+            {error.hint}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function formatTokensExact(n: number): string {
+  return n.toLocaleString("en-US");
+}
+
+function formatTokensCompact(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
   return String(n);
 }
@@ -122,6 +156,14 @@ function formatCost(usd: number): string {
   return `$${usd.toFixed(2)}`;
 }
 
+function getModelMeta(providerId: string): { label: string; bestFor: string | null } {
+  if (providerId in MODEL_INFO) {
+    const info = MODEL_INFO[providerId as ProviderId];
+    return { label: info.label, bestFor: info.bestFor };
+  }
+  return { label: providerId, bestFor: null };
+}
+
 interface UsageFooterProps {
   usage: UsageReport;
   useSkill?: boolean;
@@ -131,31 +173,55 @@ interface UsageFooterProps {
 
 function UsageFooter({ usage, useSkill, pipeline, outputFormat }: UsageFooterProps) {
   const hitPct = Math.round(usage.cacheHitRate * 100);
-  return (
-    <div className="flex items-center gap-x-3 gap-y-1 flex-wrap text-[10px] font-mono uppercase tracking-[0.15em] text-[var(--secondary)] px-1">
-      <span>
-        <span className="text-[var(--foreground)]">{formatTokens(usage.inputTokens)}</span> in
-      </span>
-      <span className="opacity-40">·</span>
-      <span>
-        <span className="text-[var(--foreground)]">{formatTokens(usage.outputTokens)}</span> out
-      </span>
-      <span className="opacity-40">·</span>
-      <span>
-        <span className={hitPct > 0 ? "text-accent" : "text-[var(--foreground)]"}>
-          {hitPct}%
-        </span>{" "}
-        cached
-      </span>
-      <span className="opacity-40">·</span>
-      <span>
-        <span className="text-[var(--foreground)]">{formatCost(usage.totalCost)}</span>
-      </span>
+  const total = usage.inputTokens + usage.outputTokens;
+  const meta = getModelMeta(usage.providerId);
 
-      <div className="flex items-center gap-1.5 ml-auto">
-        <span className="opacity-60 normal-case tracking-normal">
-          {usage.providerId}
+  return (
+    <div className="flex flex-col gap-1 px-1">
+      {/* Primary line: clear English summary of what was used */}
+      <div className="flex items-center gap-x-2 gap-y-1 flex-wrap text-[11px] text-[var(--secondary)] leading-snug">
+        <span className="font-mono uppercase tracking-[0.15em] text-[10px] text-[var(--foreground)]">
+          Tokens used
         </span>
+        <span>
+          <span className="text-[var(--foreground)] font-medium">
+            {formatTokensExact(usage.inputTokens)}
+          </span>{" "}
+          input
+        </span>
+        <span className="opacity-40">+</span>
+        <span>
+          <span className="text-[var(--foreground)] font-medium">
+            {formatTokensExact(usage.outputTokens)}
+          </span>{" "}
+          output
+        </span>
+        <span className="opacity-40">=</span>
+        <span>
+          <span className="text-[var(--foreground)] font-medium">
+            {formatTokensCompact(total)}
+          </span>{" "}
+          total
+        </span>
+        <span className="opacity-40">·</span>
+        <span title="Fraction of input tokens served from prompt cache">
+          cache{" "}
+          <span className={hitPct > 0 ? "text-accent font-medium" : "text-[var(--foreground)] font-medium"}>
+            {hitPct}%
+          </span>
+        </span>
+        <span className="opacity-40">·</span>
+        <span>
+          cost{" "}
+          <span className="text-[var(--foreground)] font-medium">
+            {formatCost(usage.totalCost)}
+          </span>
+        </span>
+      </div>
+
+      {/* Secondary line: which model + config produced this, and what it's best for */}
+      <div className="flex items-center gap-x-2 gap-y-1 flex-wrap text-[10px] font-mono uppercase tracking-[0.15em] text-[var(--secondary)]">
+        <span className="text-[var(--foreground)]">{meta.label}</span>
         {outputFormat && (
           <span className="px-1.5 py-0.5 rounded border border-[var(--border)] text-[9px]">
             {outputFormat}
@@ -179,10 +245,18 @@ function UsageFooter({ usage, useSkill, pipeline, outputFormat }: UsageFooterPro
               ? "border-accent text-accent"
               : "border-[var(--border)] opacity-50")
           }
-          title={pipeline ? "Router → specialist (2 LLM calls)" : "Single call"}
+          title={pipeline ? "Skill Decision Agent: 2-round reasoning loop → specialist (3 LLM calls)" : "Single LLM call"}
         >
-          {pipeline ? "pipeline" : "single"}
+          {pipeline ? "agent" : "single"}
         </span>
+        {meta.bestFor && (
+          <span
+            className="normal-case tracking-normal text-[10px] opacity-70 ml-1 truncate max-w-[42ch]"
+            title={meta.bestFor}
+          >
+            · best for: {meta.bestFor}
+          </span>
+        )}
       </div>
     </div>
   );

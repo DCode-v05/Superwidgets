@@ -1,0 +1,67 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>code_block · haiku</title>
+<style>body{margin:0;padding:48px 24px;background:#1a1714;font-family:ui-sans-serif,system-ui;display:flex;justify-content:center;align-items:flex-start;min-height:100vh}
+.wrap{max-width:820px;width:100%}.lbl{font-family:ui-monospace,monospace;font-size:11px;color:#9b948a;text-transform:uppercase;letter-spacing:.2em;margin-bottom:14px}</style></head>
+<body><div class="wrap"><div class="lbl">code_block · haiku · html</div><div style="background:#1a1a1a;color:#e8e8e8;border-radius:12px;padding:24px;font-family:'Courier New',monospace;font-size:13px;line-height:1.6">
+  <div style="color:#999;margin-bottom:16px;font-size:11px;letter-spacing:1px;text-transform:uppercase">Python • Resilient HTTP</div>
+  <pre style="margin:0;overflow-x:auto;color:#e8e8e8"><code><span style="color:#f92672">import</span> requests
+<span style="color:#f92672">import</span> time
+<span style="color:#f92672">from</span> typing <span style="color:#f92672">import</span> Optional
+
+<span style="color:#75715e">def</span> <span style="color:#a6e22e">fetch_with_backoff</span>(
+    url: str,
+    max_retries: int = <span style="color:#ae81ff">4</span>,
+    base_delay: float = <span style="color:#ae81ff">1.0</span>,
+    max_delay: float = <span style="color:#ae81ff">60.0</span>,
+    timeout: int = <span style="color:#ae81ff">10</span>,
+) -> Optional[requests.Response]:
+    <span style="color:#e6db74">"""
+    Fetch URL with exponential backoff retry strategy.
+    
+    Args:
+        url: Target URL
+        max_retries: Number of retry attempts (4 = 4 failures before giving up)
+        base_delay: Initial delay in seconds (1.0)
+        max_delay: Cap on any single delay (60.0)
+        timeout: Request timeout in seconds
+    
+    Returns:
+        Response object on success, None on final failure
+    """</span>
+    
+    <span style="color:#f92672">for</span> attempt <span style="color:#f92672">in</span> <span style="color:#a6e22e">range</span>(max_retries + <span style="color:#ae81ff">1</span>):
+        <span style="color:#f92672">try</span>:
+            response = requests.get(url, timeout=timeout)
+            response.raise_for_status()
+            <span style="color:#f92672">return</span> response
+        
+        <span style="color:#f92672">except</span> (requests.RequestException, requests.Timeout) <span style="color:#f92672">as</span> e:
+            <span style="color:#f92672">if</span> attempt == max_retries:
+                <span style="color:#75715e"># Final attempt failed</span>
+                <span style="color:#a6e22e">print</span>(<span style="color:#e6db74">f"Failed after {max_retries + 1} attempts: {e}"</span>)
+                <span style="color:#f92672">return</span> <span style="color:#ae81ff">None</span>
+            
+            <span style="color:#75715e"># Exponential backoff with jitter</span>
+            delay = <span style="color:#a6e22e">min</span>(
+                base_delay * (<span style="color:#ae81ff">2</span> ** attempt),
+                max_delay
+            )
+            <span style="color:#75715e"># Add random jitter (±20%)</span>
+            jitter = delay * <span style="color:#ae81ff">0.2</span> * (<span style="color:#ae81ff">2</span> * __import__(<span style="color:#e6db74">'random'</span>).random() - <span style="color:#ae81ff">1</span>)
+            actual_delay = delay + jitter
+            
+            <span style="color:#a6e22e">print</span>(<span style="color:#e6db74">f"Attempt {attempt + 1} failed. Retrying in {actual_delay:.2f}s..."</span>)
+            time.sleep(actual_delay)
+
+<span style="color:#75715e"># Usage</span>
+response = fetch_with_backoff(<span style="color:#e6db74">"https://api.example.com/data"</span>)
+<span style="color:#f92672">if</span> response:
+    data = response.json()</span></code></pre>
+  <div style="margin-top:18px;padding-top:18px;border-top:1px solid #333;font-size:12px;color:#888;line-height:1.5">
+    <strong style="color:#e8e8e8">Key features:</strong><br/>
+    • Exponential 2ⁿ backoff (1s → 2s → 4s → 8s → 16s)<br/>
+    • Jitter (±20%) to avoid thundering herd<br/>
+    • Configurable max delay cap<br/>
+    • Catches timeouts + connection errors<br/>
+    • Returns None on exhaustion
+  </div>
+</div></div></body></html>

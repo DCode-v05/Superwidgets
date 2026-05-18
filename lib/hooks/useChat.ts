@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import type { EngineEvent, ChatMessage, OutputFormat } from "@/lib/types/engine-widgets";
 import type { ProviderId } from "@/lib/engine/providers";
+import { classifyEngineError } from "@/lib/engine/error-classifier";
 import { uid } from "@/lib/utils";
 
 export interface SendOpts {
@@ -24,7 +25,10 @@ interface AssistantBuilder {
   id: string;
   text: string;
   widgetHtml: string | null;
+  typedWidgets: ChatMessage["typedWidgets"];
+  agentDecision: ChatMessage["agentDecision"];
   usage: ChatMessage["usage"];
+  error: ChatMessage["error"];
 }
 
 function applyEvent(builder: AssistantBuilder, ev: EngineEvent): boolean {
@@ -35,11 +39,22 @@ function applyEvent(builder: AssistantBuilder, ev: EngineEvent): boolean {
     case "widget_html":
       builder.widgetHtml = ev.html;
       return false;
+    case "typed_widget":
+      builder.typedWidgets = [...(builder.typedWidgets ?? []), ev.widget];
+      return false;
+    case "agent_thought":
+      // Intermediate trace — we don't surface this in state because the
+      // committed `agent_decision` event arrives right after with both rounds.
+      // Hook is here so future versions can stream a live "thinking" panel.
+      return false;
+    case "agent_decision":
+      builder.agentDecision = ev.decision;
+      return false;
     case "usage":
       builder.usage = ev.usage;
       return false;
     case "error":
-      builder.text += `\n\n_Error: ${ev.message}_\n`;
+      builder.error = classifyEngineError(ev.message);
       return false;
     case "done":
       return true;
@@ -143,7 +158,10 @@ export function useChat(): UseChatReturn {
         id: assistantId,
         text: "",
         widgetHtml: null,
+        typedWidgets: undefined,
+        agentDecision: undefined,
         usage: undefined,
+        error: undefined,
       };
 
       for await (const ev of parseSse(res.body)) {
@@ -156,7 +174,10 @@ export function useChat(): UseChatReturn {
                   ...m,
                   text: builder.text,
                   widgetHtml: builder.widgetHtml,
+                  typedWidgets: builder.typedWidgets,
+                  agentDecision: builder.agentDecision,
                   usage: builder.usage,
+                  error: builder.error,
                   isStreaming: !isDone,
                 }
               : m,
