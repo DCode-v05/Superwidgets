@@ -11,23 +11,48 @@ Mini-bap runs an **agentic loop** per user turn. Pattern: **Action → Verify �
 
 In production, the main BAP engine (in `bap-engine` sibling at `…\BAP Product\Code\`) delegates to mini-bap with a payload. In the prototype, the payload IS the user's chat message.
 
-### The 4 tools — 3 conceptual phases ([[lib/engine/tools/]])
+### THE TOOLS ([[lib/engine/tools/]])
 
-| # | Tool | Phase | Built-in verification | Terminal? |
-|---|---|---|---|---|
-| 1 | `classify_prompt` | **CLASSIFY** — analyze prompt, infer intent + interactivity need | Sanity-checks input shape; runs keyword + interactivity scoring to suggest top widget skills | No |
-| 2 | `choose_widget` | **CHOOSE** — commit to one widget skill from the 20-skill catalog | Verifies the chosen widget exists; returns design note + reference HTML + reminders (e.g. script wrapping rules) | No |
-| 3 | `validate_widget` | **IMPLEMENT** (verify) — check HTML before submit | Sentinels, contrast rule, forbidden tags, script safety (no fetch/eval/script-src, no form-action), tag balance, size cap | No |
-| 4 | `render_widget` | **IMPLEMENT** (submit) — terminal | Re-validates as final guard before terminating the loop | **Yes** |
+(2026-05-18 evening v4: settled on 2 tools after a v3 collapse to 1 tool revealed loss of pre-flight design context.)
 
-The 20 widget intents (chips, calculator, kanban_board, …) are framed as **individual skills** in a skill catalog — analogous to engine-peripherals' `utility_directory` user_skills table. The CHOOSE phase picks one skill per turn.
+| # | Tool | Phase | What it does | Cost | Terminal? |
+|---|---|---|---|---|---|
+| 1 | `build_widget(intent)` | BUILD | Returns the skill's design note + interactivity reminders. HTML-FREE — agent passes only the intent enum. | ~10 tok input, ~50 tok output | No |
+| 2 | `submit_widget(intent, html, prose?)` | SUBMIT | Validates intent + HTML structure + script safety in ONE pass. If valid → renders + ENDS loop. If invalid → returns `{valid:false, issues}` for the agent to fix and call submit_widget again. | HTML bytes | **Yes (if valid)** |
+
+**Why 2 (not 3, not 1):**
+- 3 tools (build/validate/render) = agent writes the same HTML 3× → ~3× output cost. v3 collapse fixed that.
+- 1 tool (submit only) = agent loses pre-flight design context. Some interactive widgets failed first try because the agent forgot a skill-specific rule.
+- 2 tools = HTML written ONCE (in submit), but the agent gets the design note + script-safety reminders BEFORE composing via the cheap build_widget call.
+
+Net cost vs. 1-tool design: +50–100 tokens overhead per turn (the build_widget call + response). Net cost vs. 3-tool design: ~60% output token reduction.
+
+`lib/engine/tools/classify.ts` and `choose.ts` still exist as orphaned helpers; can be removed if no future tool needs them.
+
+The 20 widget intents (chips, calculator, kanban_board, …) are framed as **individual skills** in a skill catalog — analogous to engine-peripherals' `utility_directory` user_skills table. `build_widget` picks one skill per turn (still uses classify.ts internally for the alignment check).
+
+### System prompt (production-grade, 2026-05-18 PM v3)
+
+[[lib/engine/system-prompt-freeform.ts]] — ~2,000 tokens (down from ~3,800 → ~2,300 → ~2,000). Structured as: agent definition → 1-tool loop → skill catalog → output contract → hard constraints (table) → **TOKEN ECONOMY** → script safety → design system → decision framework → single compact example.
+
+**Two load-bearing sections for the user's "best UI + less output tokens" mandate:**
+
+1. **TOKEN ECONOMY** — explicit rules pushing the model toward 800–2000-byte widgets: CSS shorthand always, no spaces in inline style values, no wrapper divs without purpose, compressed IIFEs, 4-color palette reuse, ≤1-sentence prose.
+
+2. **DESIGN SYSTEM** — production-grade UI rules: 4-color palette + 1 accent (BAP red), 4/8/12/16/20/24 spacing rhythm, single radius per widget, 3 type sizes max, 1 chosen typography pairing (editorial / industrial / modern). Discourages: purple gradients, Inter/Roboto/Arial by name, multiple accents, random padding values.
+
+The EXAMPLE at the end shows a ~1180-byte tip calculator with the actual compact density the model should emulate (short data-role names, no inline spaces, single-line IIFE, etc.).
+
+### Validator fix (2026-05-18 PM)
+
+[[lib/engine/tools/validate.ts]] tag-balance check used to false-positive on `<input>`, `<br>`, `<img>`, and SVG-leaf elements (circle, rect, path, etc.) — counted them as open tags with no matching close. Every calculator/quiz widget failed validation on this alone. Now correctly excludes void HTML elements + SVG leaf elements from the "needs close" count via a single-pass tag walker.
 
 ### Loop ([[lib/engine/run-engine.ts]])
 
 ```
-PHASE 1: classify_prompt  (verify: input shape + suggest skills)
-PHASE 2: choose_widget    (verify: skill exists + return design note)
-PHASE 3: compose HTML → validate_widget → if invalid loop here, else render_widget (terminal)
+PHASE 1: build_widget     (verify: intent + sentinels + alignment; returns design note + script-safety reminders)
+PHASE 2: validate_widget  (verify: full structural + script safety; loop here if invalid)
+PHASE 3: render_widget    (verify: re-validate; terminal — ends loop)
 
 for iter in 1..MAX_ITERATIONS (8):
     response = provider.runAgentTurn(systemPrompt, messages, tools)
@@ -55,13 +80,31 @@ All 3 providers implement the same `AgentTurnInvoker` interface ([[lib/engine/pr
 
 ### Script/form ALLOWED for interactive widgets
 
-[[components/output/HtmlBubble.tsx]] DOMPurify config permits `<script>`, `<form>`, form controls. Stripped: `<iframe>`, `<style>`, `<object>`, `<embed>`, all `on*` handlers, `script src`, `form action/method`. Post-mount shim clones each `<script>` into a fresh element so it actually executes (HTML5 spec: scripts inserted via innerHTML don't run).
+[[components/output/HtmlBubble.tsx]] DOMPurify config permits `<script>`, `<form>`, form controls. Stripped: `<iframe>`, `<style>`, `<object>`, `<embed>`, all `on*` handlers, `script src`, `form action/method`. The shim:
+1. Owns the inner DOM manually via a ref (NOT `dangerouslySetInnerHTML`) — prevents React re-touching the inner DOM on parent re-renders and detaching input elements from their listeners
+2. Sets `containerRef.current.innerHTML = clean` inside `useEffect` (gated on `[clean]`) so the DOM only changes when HTML actually changes
+3. Clones each `<script>` into a fresh element so it executes (HTML5 spec: scripts inserted via innerHTML don't run)
+4. Wraps the script body in `try { ... } catch(e) { console.error(...) }` so an in-script throw doesn't surface in the Next.js error overlay — does NOT rescue subsequent statements in the IIFE; that's the model's responsibility
 
 `validate_widget` enforces script safety: rejects fetch/XHR/WebSocket, eval/new Function/document.write, missing preventDefault on form submit. Recommends (warnings, not blockers): IIFE wrap, root id scoping.
 
+**Defensive coding rule (in system prompt):** every `querySelector` result must be guarded before calling `.addEventListener` or any method on it (`if (el) el.addEventListener(...)`). Without this, a single null deref aborts the IIFE and later listeners never bind — the widget looks alive but doesn't respond to input.
+
+**Inline clickable keywords (2026-05-18 PM v5):** the system prompt's INTERACTIVITY section now teaches three patterns for `data-bap-prompt`: chip buttons (end-of-response), inline `<span>` keywords with dashed-underline accent treatment (like Perplexity/Claude inline follow-ups), and whole-card click targets. The global click delegator in [[components/chat/ChatShell.tsx]] uses `target.closest("[data-bap-prompt]")` so all three patterns work without code changes — only the model needed to be taught the patterns.
+
+**Design direction (2026-05-18 PM v6, user-driven):** rewrote DESIGN section to be **flat aesthetic, brand-anchored, varied per widget**:
+- **NO shadows, NO gradients, NO blur/backdrop, NO translucent overlay fills.** Solid fills only. Hierarchy from color + weight + size + structure, never depth tricks.
+- **Free palette PER widget**, not per intent — same calculator should look different across two turns. Variation prevents user fatigue.
+- **BAP red `#EC3B4A` is the ONLY brand accent** — never a second brand-strength color in one widget. Reserved for CTA / active / key live metric / inline-clickable keyword.
+- **7 named mood palettes** provided as starting points (warm graphite · cool noir · paper · mint clinical · plum noir · slate · monochrome) — model can invent others as long as contrast + BAP red rules hold.
+- **Kept:** borders + dividers (1px solid only), inline SVG icons (~150 bytes each, common shapes like check/arrow/chevron with `stroke="currentColor"`), number+unit pairing for metrics, 3–6 type sizes, font pairings (editorial/industrial/modern/refined).
+- **TOKEN ECONOMY** target lowered to 1000–2500 bytes (flat designs are naturally leaner).
+
+The widget should look like it BELONGS inside mini-bap's cream / espresso bubbles. No BAP product UI reference exists beyond mini-bap's own chat shell.
+
 ### UI ([[components/output/AgentTrace.tsx]])
 
-Collapsible "Agent loop · N steps · K iter" panel above each assistant bubble. Each row: iteration #, phase label (CLASSIFY/CHOOSE/VERIFY/SUBMIT), tool name, input summary, result summary, status icon (spinner → ✓ → ⚠). Mirrors engine-peripherals' working_memory_log shape.
+Collapsible "Agent loop · N steps · K iter" panel above each assistant bubble. Each row: iteration #, phase label (BUILD/VERIFY/SUBMIT), tool name, input summary, result summary, status icon (spinner → ✓ → ⚠). Mirrors engine-peripherals' working_memory_log shape.
 
 ### SSE event schema
 

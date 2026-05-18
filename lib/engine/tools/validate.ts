@@ -93,14 +93,37 @@ export function validateWidget(html: string): ValidationResult {
     issues.push(`Widget HTML is ${inner.length} bytes (max ${MAX_WIDGET_BYTES}). Trim styles or content.`);
   }
 
-  // 9. Rough tag balance
-  const openTags = (inner.match(/<\w+(?:\s[^>]*)?>/g) ?? []).length;
-  const selfClose = (inner.match(/<\w+[^>]*\/>/g) ?? []).length;
-  const closeTags = (inner.match(/<\/\w+>/g) ?? []).length;
-  const drift = Math.abs(openTags - selfClose - closeTags);
-  if (drift > Math.max(1, Math.floor(openTags * 0.05))) {
+  // 9. Tag balance — opens that need closes vs actual closes.
+  // CORRECTLY accounts for:
+  //   - HTML void elements (input, br, img, hr, …) — no close needed
+  //   - SVG leaf elements (circle, rect, path, …) — typically self-closed
+  //     in inline SVG; HTML parser tolerates either form
+  //   - explicitly self-closed tags (`<foo />`)
+  // Previous version counted <input> as an open with no matching close,
+  // false-flagging every calculator/quiz widget.
+  const VOID_OR_LEAF =
+    "area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr|" +
+    "circle|ellipse|rect|line|polyline|polygon|path|stop|use|image";
+  const tagRe = new RegExp(`<(\\/?)(\\w+)(?:\\s[^>]*?)?(\\s*\\/)?>`, "gi");
+  let needClose = 0;
+  let closes = 0;
+  let openTotal = 0;
+  const voidRe = new RegExp(`^(?:${VOID_OR_LEAF})$`, "i");
+  for (const m of inner.matchAll(tagRe)) {
+    const isClose = m[1] === "/";
+    const name = m[2];
+    const isSelfClose = !!m[3];
+    if (isClose) {
+      closes++;
+    } else {
+      openTotal++;
+      if (!voidRe.test(name) && !isSelfClose) needClose++;
+    }
+  }
+  const drift = Math.abs(needClose - closes);
+  if (drift > Math.max(1, Math.floor(openTotal * 0.05))) {
     issues.push(
-      `Tag balance off — ${openTags} open / ${selfClose} self-close / ${closeTags} close. Close every tag.`,
+      `Tag balance off — ${needClose} non-void opens need a close, found ${closes} close tag(s). Close every non-void tag.`,
     );
   }
 
@@ -147,6 +170,79 @@ export function validateWidget(html: string): ValidationResult {
     // Total script size budget
     if (allBody.length > 4000) {
       warnings.push(`Script body is ${allBody.length} chars — consider trimming under 4000.`);
+    }
+
+    // === .value vs .textContent mismatch detection ===
+    // Catches the most common LLM bug for interactive widgets: confusing
+    // <input>/<select>/<textarea> (which use .value) with <div>/<span>
+    // (which use .textContent). Symptom: widget renders but typing doesn't
+    // visibly update — the script writes to the wrong property.
+    const varToRole = new Map<string, string>();
+    const bindingRe =
+      /\b(?:var|let|const)\s+(\w+)\s*=\s*[\w.]+\.querySelector(?:All)?\s*\(\s*['"`]\[data-role=([^'"`\]\s]+)\][^)]*\)/g;
+    let bm: RegExpExecArray | null;
+    while ((bm = bindingRe.exec(allBody)) !== null) {
+      varToRole.set(bm[1], bm[2]);
+    }
+
+    const isInputLike = (role: string): boolean => {
+      const re = new RegExp(
+        `<(input|select|textarea)\\b[^>]*\\bdata-role\\s*=\\s*['"]?${role.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}['"\\s>]`,
+        "i",
+      );
+      return re.test(inner);
+    };
+
+    const isDisplayElement = (role: string): boolean => {
+      const re = new RegExp(
+        `<(div|span|p|h[1-6]|output|td|th|li|label|small|b|i|em|strong|code|pre)\\b[^>]*\\bdata-role\\s*=\\s*['"]?${role.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}['"\\s>]`,
+        "i",
+      );
+      return re.test(inner);
+    };
+
+    // Pattern A: writes to .textContent on an input-like element
+    const textWriteRe = /\b(\w+)\.textContent\s*=/g;
+    let tw: RegExpExecArray | null;
+    while ((tw = textWriteRe.exec(allBody)) !== null) {
+      const v = tw[1];
+      const role = varToRole.get(v);
+      if (role && isInputLike(role)) {
+        issues.push(
+          `Script writes \`${v}.textContent\` but \`${v}\` is an <input>/<select>/<textarea> ` +
+            `(data-role="${role}"). Inputs render their value from the .value property — ` +
+            `textContent writes are invisible. Use \`${v}.value = ...\` instead.`,
+        );
+      }
+    }
+
+    // Pattern B: reads .textContent from an input-like element (parseFloat, etc.)
+    const textReadRe = /\b(\w+)\.textContent\b(?!\s*=)/g;
+    let tr: RegExpExecArray | null;
+    while ((tr = textReadRe.exec(allBody)) !== null) {
+      const v = tr[1];
+      const role = varToRole.get(v);
+      if (role && isInputLike(role)) {
+        issues.push(
+          `Script reads \`${v}.textContent\` but \`${v}\` is an <input>/<select>/<textarea> ` +
+            `(data-role="${role}"). Use \`${v}.value\` instead.`,
+        );
+      }
+    }
+
+    // Pattern C: writes to .value on a non-input display element
+    const valueWriteRe = /\b(\w+)\.value\s*=/g;
+    let vw: RegExpExecArray | null;
+    while ((vw = valueWriteRe.exec(allBody)) !== null) {
+      const v = vw[1];
+      const role = varToRole.get(v);
+      if (role && isDisplayElement(role)) {
+        issues.push(
+          `Script writes \`${v}.value\` but \`${v}\` is a display element ` +
+            `(data-role="${role}"). Display elements show their .textContent — ` +
+            `.value is invisible. Use \`${v}.textContent = ...\` instead.`,
+        );
+      }
     }
   }
 

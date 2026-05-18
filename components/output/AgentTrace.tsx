@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Wrench, CheckCircle2, AlertTriangle, Loader2, Scan, ListChecks, ShieldCheck, Send } from "lucide-react";
+import { ChevronDown, ChevronRight, Wrench, CheckCircle2, AlertTriangle, Loader2, Hammer, Send } from "lucide-react";
 import type { TraceStep } from "@/lib/types/engine-widgets";
 import { cn } from "@/lib/utils";
 
@@ -73,13 +73,9 @@ export function AgentTrace({ steps, isStreaming }: AgentTraceProps) {
 
 function iconForTool(name: string) {
   switch (name) {
-    case "classify_prompt":
-      return <Scan className="h-3 w-3" strokeWidth={1.75} />;
-    case "choose_widget":
-      return <ListChecks className="h-3 w-3" strokeWidth={1.75} />;
-    case "validate_widget":
-      return <ShieldCheck className="h-3 w-3" strokeWidth={1.75} />;
-    case "render_widget":
+    case "build_widget":
+      return <Hammer className="h-3 w-3" strokeWidth={1.75} />;
+    case "submit_widget":
       return <Send className="h-3 w-3" strokeWidth={1.75} />;
     default:
       return <Wrench className="h-3 w-3" strokeWidth={1.75} />;
@@ -88,13 +84,9 @@ function iconForTool(name: string) {
 
 function phaseLabelForTool(name: string): string {
   switch (name) {
-    case "classify_prompt":
-      return "CLASSIFY";
-    case "choose_widget":
-      return "CHOOSE";
-    case "validate_widget":
-      return "VERIFY";
-    case "render_widget":
+    case "build_widget":
+      return "BUILD";
+    case "submit_widget":
       return "SUBMIT";
     default:
       return "TOOL";

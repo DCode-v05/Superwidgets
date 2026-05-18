@@ -27,11 +27,11 @@ export interface WidgetSkill {
 }
 
 export const WIDGET_INTENTS = [
-  "chips", "decision_card", "confirm_card", "stepper", "checklist",
+  "chips", "decision_card", "confirm_card", "stepper", "checklist", "timeline",
   "table", "chart", "source_cards", "code_block", "inline_banner",
   "flowchart", "venn_diagram", "mind_map",
   "pie_chart", "heatmap",
-  "kpi_dashboard", "profile_card", "kanban_board",
+  "kpi_dashboard", "profile_card", "kanban_board", "pricing_table",
   "calculator", "quiz",
 ] as const;
 
@@ -259,6 +259,82 @@ const SKILLS: Record<WidgetIntent, WidgetSkill> = {
 </div>
 <script>(function(){var r=document.getElementById("bap-w-tip");if(!r)return;var b=r.querySelector("[data-role=bill]"),t=r.querySelector("[data-role=tip]"),o=r.querySelector("[data-role=total]");function f(){o.textContent="$"+(parseFloat(b.value)*(1+parseFloat(t.value)/100)).toFixed(2);}b.addEventListener("input",f);t.addEventListener("input",f);})();</script>`,
   },
+  pricing_table: {
+    intent: "pricing_table",
+    appliesWhen: "Tiered SaaS pricing — Free / Pro / Enterprise plans with per-tier feature comparison",
+    keywords: ["pricing", "plans", "tiers", "subscription", "pro plan", "enterprise", "free plan", "billing", "saas pricing"],
+    needsInteractivity: false,
+    family: "dashboard",
+    designNote:
+      "3 (most common) or 4 tier cards in a row. Each card: tier name (small uppercase label) + " +
+      "price (large, distinctive font) + optional tagline + vertical feature list with ✓ (included) " +
+      "or ✗ (excluded) + per-tier CTA button with data-bap-prompt. ONE tier is the recommended " +
+      "tier — emphasize with BAP red border (2px) and a 'Recommended' ribbon positioned above the " +
+      "card. Other tiers use a 1px neutral border. Distinct from `table` (generic feature matrix) " +
+      "because of the canonical pricing-card visual idiom.",
+    html: `<div style="background:#fdfcf8;color:#1a1a1a;padding:22px;border-radius:14px;font-family:Georgia,serif">
+  <h3 style="margin:0 0 16px;font-size:18px">Choose your plan</h3>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+    <div style="border:1px solid #e3dccd;padding:16px;border-radius:10px">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#888">Free</div>
+      <div style="font-size:28px;font-weight:700;margin:6px 0">$0<span style="font-size:14px;color:#888;font-weight:400">/mo</span></div>
+      <ul style="list-style:none;padding:0;margin:10px 0;font-size:13px;line-height:1.8">
+        <li>✓ 1 project</li>
+        <li>✓ 100 events/mo</li>
+        <li style="color:#aaa">✗ Email support</li>
+      </ul>
+      <button data-bap-prompt="Sign me up for Free" style="width:100%;background:transparent;color:#1a1a1a;border:1px solid #ccc;padding:8px;border-radius:6px;cursor:pointer">Start free</button>
+    </div>
+    <div style="border:2px solid #EC3B4A;padding:16px;border-radius:10px;position:relative">
+      <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#EC3B4A;color:#fff;padding:3px 10px;border-radius:999px;font-size:11px">Recommended</div>
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#EC3B4A">Pro</div>
+      <div style="font-size:28px;font-weight:700;margin:6px 0">$29<span style="font-size:14px;color:#888;font-weight:400">/mo</span></div>
+      <ul style="list-style:none;padding:0;margin:10px 0;font-size:13px;line-height:1.8">
+        <li>✓ Unlimited projects</li>
+        <li>✓ 1M events/mo</li>
+        <li>✓ Email + chat support</li>
+      </ul>
+      <button data-bap-prompt="Sign me up for Pro" style="width:100%;background:#EC3B4A;color:#fff;border:0;padding:8px;border-radius:6px;cursor:pointer">Start Pro</button>
+    </div>
+    <div style="border:1px solid #e3dccd;padding:16px;border-radius:10px">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#888">Enterprise</div>
+      <div style="font-size:28px;font-weight:700;margin:6px 0">Custom</div>
+      <ul style="list-style:none;padding:0;margin:10px 0;font-size:13px;line-height:1.8">
+        <li>✓ SSO + audit logs</li>
+        <li>✓ SLA + dedicated CSM</li>
+      </ul>
+      <button data-bap-prompt="Contact sales" style="width:100%;background:transparent;color:#1a1a1a;border:1px solid #ccc;padding:8px;border-radius:6px;cursor:pointer">Contact sales</button>
+    </div>
+  </div>
+</div>`,
+  },
+  timeline: {
+    intent: "timeline",
+    appliesWhen: "Chronological dated events — history, roadmap, or milestone sequence (forward- or backward-looking)",
+    keywords: ["timeline", "history", "milestones", "roadmap", "chronological", "year", "events over time", "story of"],
+    needsInteractivity: false,
+    family: "static",
+    designNote:
+      "Vertical dated-event list. Layout: date column (left, monospace, right-aligned) + dot marker (middle, with a thin vertical line connecting all dots) + content (right: title + 1-line body). 3–8 events in chronological order. ONE event may be tone:'accent' — highlight with BAP red date + BAP red dot to mark the current / most-recent / key milestone. Distinct from `stepper` (process with todo/doing/done status) — timeline is DATED historical (or future) events with no status concept.",
+    html: `<div style="background:#fdfcf8;color:#1a1a1a;padding:22px;border-radius:14px;font-family:Georgia,serif">
+  <h3 style="margin:0 0 16px;font-size:18px">Y Combinator — milestones</h3>
+  <div style="position:relative;padding-left:120px">
+    <div style="position:absolute;left:96px;top:0;bottom:0;width:2px;background:#e3dccd"></div>
+    <div style="position:relative;padding-bottom:18px">
+      <div style="position:absolute;left:-120px;top:2px;width:80px;text-align:right;font-family:ui-monospace,monospace;font-size:12px;color:#666">2005</div>
+      <div style="position:absolute;left:-30px;top:6px;width:10px;height:10px;border-radius:50%;background:#1a1a1a"></div>
+      <div style="font-weight:600;font-size:14px">Founded by Paul Graham & Jessica Livingston</div>
+      <div style="font-size:12px;color:#666;margin-top:2px">First batch funded 8 startups in summer 2005.</div>
+    </div>
+    <div style="position:relative;padding-bottom:18px">
+      <div style="position:absolute;left:-120px;top:2px;width:80px;text-align:right;font-family:ui-monospace,monospace;font-size:12px;color:#EC3B4A;font-weight:700">2024</div>
+      <div style="position:absolute;left:-30px;top:6px;width:10px;height:10px;border-radius:50%;background:#EC3B4A"></div>
+      <div style="font-weight:600;font-size:14px">~5,000 companies funded total</div>
+      <div style="font-size:12px;color:#666;margin-top:2px">Combined valuation exceeds $600 billion.</div>
+    </div>
+  </div>
+</div>`,
+  },
   quiz: {
     intent: "quiz",
     appliesWhen: "Multiple-choice quiz with scoring. REQUIRES <form> + <script>.",
@@ -266,7 +342,11 @@ const SKILLS: Record<WidgetIntent, WidgetSkill> = {
     needsInteractivity: true,
     family: "interactive",
     designNote:
-      "Form with radio inputs + script for scoring. Submit handler MUST call e.preventDefault().",
+      "Form with radio inputs + script for scoring. Submit handler MUST call e.preventDefault(). " +
+      "After submit, the score must be VISUALLY OBVIOUS — display in a prominent result panel with " +
+      "accent color and large type (24–32px), not a tiny corner note. Consider per-question feedback " +
+      "(✓ green for correct, ✗ red for incorrect) shown after submit. Provide a follow-up chip like " +
+      "'Try another quiz' (data-bap-prompt) after the result.",
     html: `<form id="bap-w-quiz" style="background:#0f1116;color:#e6e6e6;border-radius:14px;padding:22px;font-family:ui-sans-serif">
   <fieldset style="border:1px solid #333;border-radius:8px;padding:12px"><legend>Q1</legend>
     <label><input type="radio" name="q1" value="a" data-correct> Right answer</label>

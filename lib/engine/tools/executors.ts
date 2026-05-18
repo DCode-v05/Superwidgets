@@ -1,18 +1,11 @@
 import type { ToolCall, ToolResult } from "./types";
-import { listIntents } from "./widget-library";
+import { listIntents, getSkill } from "./widget-library";
 import { validateWidget } from "./validate";
-import { classifyPrompt } from "./classify";
-import { chooseWidget } from "./choose";
 
 /**
- * Tool dispatch. Each phase has built-in verification:
- *   - classify_prompt sanity-checks the classification
- *   - choose_widget verifies the widget exists
- *   - validate_widget runs structural checks on the HTML
- *   - render_widget re-validates as a final guard
- *
- * For the terminal tool `render_widget`, also returns a `finalRender`
- * payload — run-engine uses this to emit the widget event and end the loop.
+ * Two-tool dispatch:
+ *   - build_widget : intent → design note + reminders (no HTML, cheap)
+ *   - submit_widget: intent + html → validate + render (terminal if valid)
  */
 
 export interface FinalRender {
@@ -22,26 +15,22 @@ export interface FinalRender {
 
 export interface ExecuteResult {
   result: ToolResult;
-  /** Only set when render_widget — signals the loop to terminate. */
+  /** Only set when submit_widget validated — signals the loop to terminate. */
   finalRender?: FinalRender;
 }
 
 export function executeTool(call: ToolCall): ExecuteResult {
   try {
     switch (call.name) {
-      case "classify_prompt":
-        return runClassify(call);
-      case "choose_widget":
-        return runChoose(call);
-      case "validate_widget":
-        return runValidate(call);
-      case "render_widget":
-        return runRender(call);
+      case "build_widget":
+        return runBuild(call);
+      case "submit_widget":
+        return runSubmit(call);
       default:
         return {
           result: errorResult(
             call,
-            `Unknown tool "${call.name}". Available: classify_prompt, choose_widget, validate_widget, render_widget.`,
+            `Unknown tool "${call.name}". Available: build_widget, submit_widget.`,
           ),
         };
     }
@@ -51,100 +40,66 @@ export function executeTool(call: ToolCall): ExecuteResult {
   }
 }
 
-function runClassify(call: ToolCall): ExecuteResult {
-  const r = classifyPrompt({
-    prompt: String(call.input.prompt ?? ""),
-    intent_description: String(call.input.intent_description ?? ""),
-    needs_interactivity: Boolean(call.input.needs_interactivity),
-    domain: call.input.domain != null ? String(call.input.domain) : undefined,
-    complexity: call.input.complexity != null ? String(call.input.complexity) : undefined,
-  });
+const SENTINEL_START = "<!--bap-widget:start-->";
+const SENTINEL_END = "<!--bap-widget:end-->";
 
-  if (!r.ok) {
+// === Phase 1: build_widget — design hints for the chosen intent ===
+
+function runBuild(call: ToolCall): ExecuteResult {
+  const intent = String(call.input.intent ?? "").trim();
+  if (!intent) {
+    return { result: errorResult(call, `"intent" is required.`) };
+  }
+  const skill = getSkill(intent);
+  if (!skill) {
     return {
-      result: errorResult(call, `classify_prompt rejected:\n${r.issues.map((i) => `  - ${i}`).join("\n")}`),
+      result: errorResult(
+        call,
+        `Unknown intent "${intent}". Valid: ${listIntents().join(", ")}.`,
+      ),
     };
   }
 
   const lines: string[] = [
-    `ok: true`,
-    `interpretation: "${r.echoed.intent_description}"`,
-    `needs_interactivity: ${r.echoed.needs_interactivity}`,
+    `intent: ${intent}`,
+    `design_note: ${skill.designNote}`,
   ];
-  if (r.echoed.domain) lines.push(`domain: ${r.echoed.domain}`);
-  if (r.echoed.complexity) lines.push(`complexity: ${r.echoed.complexity}`);
-  lines.push(``, `suggested_widgets:`);
-  for (const s of r.suggested_widgets) {
-    lines.push(`  - ${s.intent}  (${s.reason})`);
+
+  const reminders: string[] = [];
+  if (skill.needsInteractivity) {
+    const formNote = skill.intent === "quiz" ? " + <form>" : "";
+    reminders.push(
+      `Uses <script>${formNote}. IIFE wrap · unique root id="bap-w-..." · ` +
+        `null-guard every querySelector · .value on <input>/<select>/<textarea>, ` +
+        `.textContent on <div>/<span> · "input" event for live updates · ` +
+        `no fetch/XHR/eval.`,
+    );
   }
-  if (r.notes.length > 0) {
-    lines.push(``, `notes:`);
-    for (const n of r.notes) lines.push(`  - ${n}`);
+  if (skill.intent === "quiz") {
+    reminders.push(`Form submit handler MUST call e.preventDefault() at the top.`);
   }
-  lines.push(``, `→ Next: call choose_widget with one of the suggested widgets.`);
+  if (skill.intent === "source_cards") {
+    reminders.push(`<a href> is allowed in this widget ONLY.`);
+  }
+  if (skill.intent === "confirm_card") {
+    reminders.push(`The confirm/proceed button MUST have data-bap-confirm.`);
+  }
+
+  if (reminders.length > 0) {
+    lines.push(`reminders:`);
+    for (const r of reminders) lines.push(`  - ${r}`);
+  }
+  lines.push(``, `→ Compose HTML now, then call submit_widget.`);
 
   return {
     result: { toolCallId: call.id, name: call.name, content: lines.join("\n"), isError: false },
   };
 }
 
-function runChoose(call: ToolCall): ExecuteResult {
-  const r = chooseWidget({
-    widget: String(call.input.widget ?? ""),
-    reasoning: String(call.input.reasoning ?? ""),
-  });
+// === Phase 2: submit_widget — validate + render ===
 
-  if (!r.ok || !r.chosen) {
-    const issues = r.issues.length > 0
-      ? r.issues.map((i) => `  - ${i}`).join("\n")
-      : `  - Unknown failure. Valid widgets: ${listIntents().join(", ")}`;
-    return { result: errorResult(call, `choose_widget rejected:\n${issues}`) };
-  }
-
-  const lines: string[] = [
-    `chosen: ${r.chosen}`,
-    `design_note: ${r.design_note}`,
-    ``,
-    `reference_html (INSPIRATION ONLY — vary the aesthetic):`,
-    r.reference_html ?? "",
-  ];
-  if (r.reminders.length > 0) {
-    lines.push(``, `reminders:`);
-    for (const rem of r.reminders) lines.push(`  - ${rem}`);
-  }
-  lines.push(``, `→ Next: compose your widget HTML, then call validate_widget.`);
-
-  return {
-    result: { toolCallId: call.id, name: call.name, content: lines.join("\n"), isError: false },
-  };
-}
-
-function runValidate(call: ToolCall): ExecuteResult {
-  const html = String(call.input.html ?? "");
-  if (!html) {
-    return { result: errorResult(call, `Required parameter "html" was empty.`) };
-  }
-  const v = validateWidget(html);
-  const lines = [`valid: ${v.valid}`, `summary: ${v.summary}`];
-  if (v.issues.length > 0) {
-    lines.push("issues:");
-    for (const i of v.issues) lines.push(`  - ${i}`);
-  }
-  if (v.warnings.length > 0) {
-    lines.push("warnings:");
-    for (const w of v.warnings) lines.push(`  - ${w}`);
-  }
-  if (v.valid) {
-    lines.push(``, `→ Next: call render_widget with the same html.`);
-  } else {
-    lines.push(``, `→ Next: fix issues above and call validate_widget AGAIN.`);
-  }
-  return {
-    result: { toolCallId: call.id, name: call.name, content: lines.join("\n"), isError: false },
-  };
-}
-
-function runRender(call: ToolCall): ExecuteResult {
+function runSubmit(call: ToolCall): ExecuteResult {
+  const intent = String(call.input.intent ?? "").trim();
   const html = String(call.input.html ?? "");
   const proseRaw = call.input.prose;
   const prose =
@@ -152,18 +107,43 @@ function runRender(call: ToolCall): ExecuteResult {
       ? proseRaw.trim()
       : null;
 
-  if (!html) {
-    return { result: errorResult(call, `Required parameter "html" was empty.`) };
+  const earlyIssues: string[] = [];
+
+  if (!intent) earlyIssues.push(`"intent" is required.`);
+  else if (!getSkill(intent)) {
+    earlyIssues.push(
+      `Unknown intent "${intent}". Valid: ${listIntents().join(", ")}.`,
+    );
+  }
+  if (!html) earlyIssues.push(`"html" is required.`);
+  if (
+    html &&
+    (!html.includes(SENTINEL_START) || !html.includes(SENTINEL_END))
+  ) {
+    earlyIssues.push(
+      `HTML missing sentinels. Wrap in ${SENTINEL_START} … ${SENTINEL_END}.`,
+    );
   }
 
-  // Final guard — terminal tool re-validates
+  if (earlyIssues.length > 0) {
+    return {
+      result: rejectResult(
+        call,
+        earlyIssues,
+        [],
+        `submit_widget rejected — fix and call submit_widget AGAIN with corrected input.`,
+      ),
+    };
+  }
+
   const v = validateWidget(html);
   if (!v.valid) {
     return {
-      result: errorResult(
+      result: rejectResult(
         call,
-        `render_widget rejected — HTML has issues. Call validate_widget, fix, then retry:\n` +
-          v.issues.map((i) => `  - ${i}`).join("\n"),
+        v.issues,
+        v.warnings,
+        `submit_widget rejected — fix issues above and call submit_widget AGAIN.`,
       ),
     };
   }
@@ -172,11 +152,51 @@ function runRender(call: ToolCall): ExecuteResult {
     result: {
       toolCallId: call.id,
       name: call.name,
-      content: `accepted: true — widget sent to user. Loop ends.`,
+      content: [
+        `valid: true`,
+        `intent: ${intent}`,
+        `bytes: ${extractInner(html).length}`,
+        ...(v.warnings.length > 0
+          ? ["warnings:", ...v.warnings.map((w) => `  - ${w}`)]
+          : []),
+        ``,
+        `accepted — widget rendered. Loop ends.`,
+      ].join("\n"),
       isError: false,
     },
     finalRender: { html, prose },
   };
+}
+
+function rejectResult(
+  call: ToolCall,
+  issues: string[],
+  warnings: string[],
+  nextStep: string,
+): ToolResult {
+  const lines = [`valid: false`];
+  if (issues.length > 0) {
+    lines.push(`issues:`);
+    for (const i of issues) lines.push(`  - ${i}`);
+  }
+  if (warnings.length > 0) {
+    lines.push(`warnings:`);
+    for (const w of warnings) lines.push(`  - ${w}`);
+  }
+  lines.push(``, `→ ${nextStep}`);
+  return {
+    toolCallId: call.id,
+    name: call.name,
+    content: lines.join("\n"),
+    isError: false, // not an error — just feedback; agent loops back
+  };
+}
+
+function extractInner(raw: string): string {
+  const i = raw.indexOf(SENTINEL_START);
+  const j = raw.indexOf(SENTINEL_END);
+  if (i === -1 || j === -1 || j <= i) return raw;
+  return raw.slice(i + SENTINEL_START.length, j).trim();
 }
 
 function errorResult(call: ToolCall, message: string): ToolResult {

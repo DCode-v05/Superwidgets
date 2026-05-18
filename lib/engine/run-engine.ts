@@ -168,23 +168,16 @@ export async function* runEngine(
 // === helpers ===
 
 function summarizeInput(toolName: string, input: Record<string, unknown>): string {
-  if (toolName === "classify_prompt") {
-    const interp = typeof input.intent_description === "string" ? input.intent_description : "";
-    const inter = input.needs_interactivity === true ? " · interactive" : "";
-    return `"${truncate(interp, 80)}"${inter}`;
+  if (toolName === "build_widget") {
+    return `intent: ${String(input.intent ?? "?")}`;
   }
-  if (toolName === "choose_widget") {
-    return `widget: ${String(input.widget ?? "?")}`;
-  }
-  if (toolName === "validate_widget") {
-    return `html: ${String(input.html ?? "").length} bytes`;
-  }
-  if (toolName === "render_widget") {
-    const html = String(input.html ?? "");
+  if (toolName === "submit_widget") {
+    const intent = String(input.intent ?? "?");
+    const htmlLen = String(input.html ?? "").length;
     const prose = typeof input.prose === "string" ? input.prose : "";
     return prose
-      ? `html: ${html.length} bytes · prose: "${truncate(prose, 60)}"`
-      : `html: ${html.length} bytes`;
+      ? `${intent} · ${htmlLen}B · "${truncate(prose, 50)}"`
+      : `${intent} · ${htmlLen}B`;
   }
   return JSON.stringify(input).slice(0, 120);
 }
