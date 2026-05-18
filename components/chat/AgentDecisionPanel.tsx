@@ -1,8 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Brain, ChevronDown, AlertCircle, Repeat, Check } from "lucide-react";
+import { Brain, ChevronDown, AlertCircle, Repeat, Check, DollarSign } from "lucide-react";
 import type { AgentDecision, AgentReflection } from "@/lib/engine/agent-runner";
+
+function formatUsd(n: number): string {
+  if (n < 0.0001) return "<$0.0001";
+  if (n < 0.01) return `$${n.toFixed(4)}`;
+  if (n < 1) return `$${n.toFixed(3)}`;
+  return `$${n.toFixed(2)}`;
+}
+
+function formatTokens(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
+  return String(n);
+}
 
 /**
  * Renders the Skill Decision Agent's recursive reasoning trace above the widget.
@@ -50,6 +62,13 @@ export function AgentDecisionPanel({ decision }: { decision: AgentDecision }) {
           >
             <Repeat className="h-2.5 w-2.5" strokeWidth={2} />
             {decision.iterations}× · {stopLabel.short}
+          </span>
+          <span
+            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-accent/10 border border-accent/30 text-accent"
+            title={`Agent reasoning cost (excludes the specialist render). ${decision.agentInputTokens} input + ${decision.agentOutputTokens} output tokens across ${decision.iterations} round${decision.iterations === 1 ? "" : "s"}.`}
+          >
+            <DollarSign className="h-2.5 w-2.5" strokeWidth={2} />
+            reasoning {formatUsd(decision.agentCost)}
           </span>
           {decision.overridden && (
             <span
@@ -121,6 +140,43 @@ export function AgentDecisionPanel({ decision }: { decision: AgentDecision }) {
               isLast={idx === decision.reflections.length - 1}
             />
           ))}
+
+          {/* Per-round cost breakdown */}
+          {decision.perRoundCost.length > 0 && (
+            <section>
+              <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em] text-[var(--secondary)] mb-1.5">
+                <span className="px-1.5 py-0.5 rounded bg-[var(--surface)] border border-[var(--border)]">
+                  Cost
+                </span>
+                <span>Reasoning breakdown</span>
+                <span className="ml-auto normal-case tracking-normal text-[var(--foreground)]">
+                  total <span className="text-accent font-semibold">{formatUsd(decision.agentCost)}</span>
+                </span>
+              </div>
+              <div className="space-y-0.5 text-[11px]">
+                {decision.perRoundCost.map((r) => {
+                  const label = r.round === 1 ? "Propose" : `Reflect ${r.round - 1}`;
+                  return (
+                    <div key={r.round} className="flex items-center gap-2 font-mono tabular-nums">
+                      <span className="text-[var(--secondary)] w-10 shrink-0 text-right">
+                        R{r.round}
+                      </span>
+                      <span className="text-[var(--foreground)] w-20 shrink-0">{label}</span>
+                      <span className="text-[var(--secondary)] flex-1 min-w-0">
+                        {formatTokens(r.inputTokens)} in · {formatTokens(r.outputTokens)} out
+                      </span>
+                      <span className="text-[var(--foreground)] font-semibold w-16 text-right">
+                        {formatUsd(r.cost)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-1.5 text-[10px] text-[var(--secondary)] italic leading-relaxed">
+                Reasoning cost only — the specialist call that rendered the widget is billed separately in the usage footer below.
+              </div>
+            </section>
+          )}
 
           {/* Stop reason summary */}
           <section className="rounded border border-[var(--border)] bg-[var(--surface)] px-2.5 py-2 text-[11px] leading-relaxed text-[var(--secondary)]">

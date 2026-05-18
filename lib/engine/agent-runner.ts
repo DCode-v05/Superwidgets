@@ -1,7 +1,8 @@
-import type { ProviderInvoker } from "./providers";
+import type { ProviderInvoker, ProviderId } from "./providers";
 import type { UsageMetadata } from "./providers/types";
 import { AGENT_ROUND_1_PROMPT, AGENT_REFLECT_PROMPT } from "./agent-prompt";
 import { isWidgetIntent, type WidgetIntent } from "./skills";
+import { computeCost } from "./pricing";
 
 /**
  * Skill Decision Agent — **recursive** reasoning loop.
@@ -49,6 +50,14 @@ export interface AgentReflection {
 
 export type AgentStopReason = "high_confidence" | "converged" | "max_rounds" | "override";
 
+/** Per-round cost + token usage breakdown — surfaced in the AgentDecisionPanel. */
+export interface AgentRoundCost {
+  round: number;
+  inputTokens: number;
+  outputTokens: number;
+  cost: number;
+}
+
 export interface AgentDecision {
   /** True if the runner overrode the model's pick (low confidence or invalid kind). */
   overridden: boolean;
@@ -64,6 +73,13 @@ export interface AgentDecision {
   rationale: string;
   /** 0..1 confidence (post-override). */
   confidence: number;
+  /** Sum of tokens consumed across all agent rounds (excludes specialist). */
+  agentInputTokens: number;
+  agentOutputTokens: number;
+  /** USD spent on the agent loop alone (excludes specialist), via lib/engine/pricing.ts. */
+  agentCost: number;
+  /** Per-round cost so the panel can show where the spend went. */
+  perRoundCost: AgentRoundCost[];
 }
 
 export interface AgentRunResult {
@@ -73,6 +89,7 @@ export interface AgentRunResult {
 
 export async function runAgent(
   provider: ProviderInvoker,
+  providerId: ProviderId,
   message: string,
   history: Array<{ role: "user" | "assistant"; content: string }>,
 ): Promise<AgentRunResult> {
@@ -92,6 +109,8 @@ export async function runAgent(
     const raw = await runOne(provider, AGENT_REFLECT_PROMPT, ctx, [], usages);
     const parsed = parseReflection(raw, round);
     reflections.push(parsed);
+
+    // (cost handled at return time — one computation per round below)
 
     // Stop condition 1 — high confidence
     if (parsed.confidence >= HIGH_CONFIDENCE_THRESHOLD) {
@@ -142,6 +161,18 @@ export async function runAgent(
     chosen = finalReflection.chosen;
   }
 
+  // === COST BREAKDOWN ===
+  // usages[0] = Round 1 (Propose), usages[1..] = Reflections in order.
+  const perRoundCost: AgentRoundCost[] = usages.map((u, i) => ({
+    round: i + 1,
+    inputTokens: u.inputTokens,
+    outputTokens: u.outputTokens,
+    cost: computeCost(providerId, u),
+  }));
+  const agentInputTokens = usages.reduce((s, u) => s + u.inputTokens, 0);
+  const agentOutputTokens = usages.reduce((s, u) => s + u.outputTokens, 0);
+  const agentCost = perRoundCost.reduce((s, r) => s + r.cost, 0);
+
   return {
     decision: {
       overridden,
@@ -154,6 +185,10 @@ export async function runAgent(
         ? `Agent confidence was ${finalReflection.confidence.toFixed(2)} — falling back to chips. Original rationale: ${finalReflection.rationale}`
         : finalReflection.rationale,
       confidence: finalReflection.confidence,
+      agentInputTokens,
+      agentOutputTokens,
+      agentCost,
+      perRoundCost,
     },
     usage: usages,
   };

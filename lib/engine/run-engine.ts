@@ -151,10 +151,10 @@ async function* runPipelineMode(
   let ok = true;
   let errMsg: string | undefined;
 
-  // === STAGE 1: AGENT — 2-round decision loop ===
+  // === STAGE 1: AGENT — recursive decision loop ===
   let agentResult;
   try {
-    agentResult = await runAgent(provider, message, history);
+    agentResult = await runAgent(provider, opts.providerId, message, history);
   } catch (e) {
     ok = false;
     errMsg = e instanceof Error ? e.message : String(e);
