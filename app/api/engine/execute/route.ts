@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { runEngine } from "@/lib/engine/run-engine";
 import { isProviderId, type ProviderId } from "@/lib/engine/providers";
-import type { EngineEvent, OutputFormat } from "@/lib/types/engine-widgets";
+import type { EngineEvent } from "@/lib/types/engine-widgets";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,12 +11,6 @@ interface RequestBody {
   history?: Array<{ role: "user" | "assistant"; content: string }>;
   providerId?: ProviderId;
   useSkill?: boolean;
-  pipeline?: boolean;
-  outputFormat?: OutputFormat;
-}
-
-function isOutputFormat(v: unknown): v is OutputFormat {
-  return v === "html" || v === "react";
 }
 
 export async function POST(req: NextRequest) {
@@ -27,10 +21,6 @@ export async function POST(req: NextRequest) {
     ? body.providerId
     : "sonnet";
   const useSkill = body.useSkill === true;
-  const pipeline = body.pipeline === true;
-  const outputFormat: OutputFormat = isOutputFormat(body.outputFormat)
-    ? body.outputFormat
-    : "html";
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -44,8 +34,6 @@ export async function POST(req: NextRequest) {
         for await (const ev of runEngine(body.message, body.history ?? [], {
           providerId,
           useSkill,
-          pipeline,
-          outputFormat,
         })) {
           sendEvent(ev);
         }

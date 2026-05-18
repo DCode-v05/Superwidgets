@@ -94,4 +94,84 @@ export const TEST_PROMPTS: PromptGroup[] = [
       "Warn me about the deprecation of an old API version",
     ],
   },
+  {
+    kind: "flowchart",
+    label: "Flowchart",
+    prompts: [
+      "Draw a flowchart for handling a customer refund request",
+      "Show the CI/CD pipeline flow for a typical PR merge",
+    ],
+  },
+  {
+    kind: "venn_diagram",
+    label: "Venn diagram",
+    prompts: [
+      "Venn diagram: data engineer vs data scientist vs analytics engineer",
+      "Show overlap between React, Vue, and Svelte feature sets",
+    ],
+  },
+  {
+    kind: "mind_map",
+    label: "Mind map",
+    prompts: [
+      "Mind map of skills needed to become a senior backend engineer",
+      "Map out the components of a modern observability stack",
+    ],
+  },
+  {
+    kind: "pie_chart",
+    label: "Pie chart",
+    prompts: [
+      "Show a pie chart of typical SaaS startup expenses by category",
+      "Pie chart of browser market share in 2026",
+    ],
+  },
+  {
+    kind: "heatmap",
+    label: "Heatmap",
+    prompts: [
+      "Heatmap of website traffic by day of week and hour of day",
+      "Show GitHub-style commit activity heatmap for a contributor",
+    ],
+  },
+  {
+    kind: "kpi_dashboard",
+    label: "KPI dashboard",
+    prompts: [
+      "Build a SaaS KPI dashboard: MRR, churn, ARPU, NPS",
+      "Show a marketing dashboard with traffic, signups, CAC, and LTV",
+    ],
+  },
+  {
+    kind: "profile_card",
+    label: "Profile card",
+    prompts: [
+      "Profile card for a fictional staff engineer at a fintech",
+      "Make a contact card for a freelance designer",
+    ],
+  },
+  {
+    kind: "kanban_board",
+    label: "Kanban board",
+    prompts: [
+      "Show a kanban board for a 3-person team shipping a new feature",
+      "Kanban for a Q3 product roadmap with backlog/in-progress/shipped columns",
+    ],
+  },
+  {
+    kind: "calculator",
+    label: "Calculator (live)",
+    prompts: [
+      "Build me a tip calculator with bill, people, and tip slider",
+      "Make a unit converter for kilometers and miles",
+    ],
+  },
+  {
+    kind: "quiz",
+    label: "Quiz (live)",
+    prompts: [
+      "Make a 3-question quiz about HTTP status codes",
+      "Quick quiz on basic React hooks — 4 questions, multiple choice",
+    ],
+  },
 ];

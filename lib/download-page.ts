@@ -35,22 +35,15 @@ function renderMessage(msg: ChatMessage): string {
     ? `<div class="prose">${escapeHtml(msg.text).replace(/\n/g, "<br>")}</div>`
     : "";
 
-  let widgetHtml = "";
-  if (msg.widgetHtml) {
-    if (msg.outputFormat === "react") {
-      widgetHtml = `<pre class="code"><code>${escapeHtml(msg.widgetHtml)}</code></pre>`;
-    } else {
-      // HTML widgets are self-contained with inline styles — drop in as-is.
-      widgetHtml = `<div class="widget-wrap">${msg.widgetHtml}</div>`;
-    }
-  }
+  // HTML widgets are self-contained with inline styles — drop in as-is.
+  const widgetHtml = msg.widgetHtml
+    ? `<div class="widget-wrap">${msg.widgetHtml}</div>`
+    : "";
 
   let usageHtml = "";
   if (msg.usage) {
     const hitPct = Math.round(msg.usage.cacheHitRate * 100);
     const skillBadge = msg.useSkill ? `<span class="badge badge-on">+skill</span>` : `<span class="badge">no skill</span>`;
-    const pipelineBadge = msg.pipeline ? `<span class="badge badge-on">pipeline</span>` : `<span class="badge">single</span>`;
-    const formatBadge = msg.outputFormat ? `<span class="badge">${msg.outputFormat}</span>` : "";
     usageHtml = `
       <div class="usage">
         <span><b>${formatTokens(msg.usage.inputTokens)}</b> in</span>
@@ -61,7 +54,7 @@ function renderMessage(msg: ChatMessage): string {
         <span class="sep">·</span>
         <span><b>${formatCost(msg.usage.totalCost)}</b></span>
         <span class="meta">
-          ${escapeHtml(msg.usage.providerId)} ${formatBadge} ${skillBadge} ${pipelineBadge}
+          ${escapeHtml(msg.usage.providerId)} ${skillBadge}
         </span>
       </div>`;
   }
@@ -168,17 +161,6 @@ export function exportChatAsHtml(messages: ChatMessage[]): string {
 
   .prose { margin-bottom: 12px; }
   .widget-wrap { margin: 8px 0; }
-
-  pre.code {
-    background: #0d1117;
-    color: #c9d1d9;
-    padding: 14px;
-    border-radius: 8px;
-    overflow-x: auto;
-    font-family: ui-monospace, "JetBrains Mono", monospace;
-    font-size: 12px;
-    line-height: 1.55;
-  }
 
   .usage {
     margin-top: 14px;

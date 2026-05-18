@@ -11,8 +11,7 @@
  * Expected total cost: roughly $0.50 - $1.50 depending on output sizes.
  * Expected wall time: 8 - 25 minutes (sequential, respects rate limits).
  *
- * Only sweeps single-call mode and HTML output — pipeline + React are both
- * cost multipliers, irrelevant for finding the cost-efficient sweet spot.
+ * Sweeps all models with skill ON/OFF to find the cost-efficient sweet spot.
  */
 
 // Load .env.local if available (Node 20.12+).
@@ -80,8 +79,6 @@ async function runOne(combo: Combo, prompt: TestPrompt): Promise<{
   for await (const ev of runEngine(prompt.text, [], {
     providerId: combo.providerId,
     useSkill: combo.useSkill,
-    pipeline: false,
-    outputFormat: "html",
   })) {
     if (ev.type === "text_delta") text += ev.text;
     else if (ev.type === "widget_html") widgetHtml = ev.html;

@@ -12,18 +12,18 @@ import {
   type ChatSelection,
 } from "./ModeSelector";
 import { CostCalculator } from "./CostCalculator";
+import { PromptLibrary } from "./PromptLibrary";
 import { downloadChatPage } from "@/lib/download-page";
 
 const DEFAULT_SELECTION: ChatSelection = {
   providerId: "sonnet",
   useSkill: false,
-  pipeline: false,
-  outputFormat: "html",
 };
 
 export function ChatShell() {
   const { messages, isStreaming, error, send, reset } = useChat();
   const [selection, setSelection] = useState<ChatSelection>(DEFAULT_SELECTION);
+  const [libraryOpen, setLibraryOpen] = useState(false);
 
   const sendWithMode = useCallback(
     (message: string) => send(message, selectionToOpts(selection)),
@@ -59,14 +59,23 @@ export function ChatShell() {
   return (
     <div className="relative flex flex-col h-full">
       <header className="relative z-10 flex items-center justify-between border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-md px-6 md:px-10 py-4">
-        <div className="flex items-baseline gap-3">
-          <Sparkles className="h-5 w-5 text-accent translate-y-[3px]" strokeWidth={1.5} />
-          <h1 className="font-display text-2xl font-bold tracking-tight leading-none">
-            Mini-BAP
-          </h1>
-          <span className="hidden md:inline text-[10px] uppercase tracking-[0.25em] text-[var(--secondary)] ml-2 font-mono">
-            Interactive UI Responses
-          </span>
+        <div className="flex items-center gap-5">
+          <PromptLibrary
+            open={libraryOpen}
+            onOpenChange={setLibraryOpen}
+            onPick={sendWithMode}
+            disabled={isStreaming}
+          />
+          <span className="hidden md:inline-block h-3.5 w-px bg-[var(--border)]" />
+          <div className="flex items-baseline gap-3">
+            <Sparkles className="h-5 w-5 text-accent translate-y-[3px]" strokeWidth={1.5} />
+            <h1 className="font-display text-2xl font-bold tracking-tight leading-none">
+              Mini-BAP
+            </h1>
+            <span className="hidden md:inline text-[10px] uppercase tracking-[0.25em] text-[var(--secondary)] ml-2 font-mono">
+              Interactive UI Responses
+            </span>
+          </div>
         </div>
         <div className="flex items-center gap-5">
           <CostCalculator />
@@ -92,7 +101,7 @@ export function ChatShell() {
 
       <div className="relative z-10 flex-1 overflow-hidden flex flex-col">
         {messages.length === 0 ? (
-          <EmptyState onPick={sendWithMode} />
+          <EmptyState onOpenPrompts={() => setLibraryOpen(true)} />
         ) : (
           <ChatMessageList messages={messages} />
         )}

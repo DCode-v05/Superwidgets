@@ -1,5 +1,3 @@
-export type OutputFormat = "html" | "react";
-
 export interface UsageReport {
   providerId: string;
   inputTokens: number;
@@ -22,9 +20,7 @@ export interface ChatMessage {
   role: "user" | "assistant";
   text: string;
   widgetHtml: string | null;
-  outputFormat?: OutputFormat;
   useSkill?: boolean;
-  pipeline?: boolean;
   usage?: UsageReport;
   isStreaming?: boolean;
 }

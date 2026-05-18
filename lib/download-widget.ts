@@ -1,5 +1,3 @@
-import type { OutputFormat } from "@/lib/types/engine-widgets";
-
 /**
  * Wrap raw widget HTML in a standalone HTML document so it can be opened
  * directly in a browser. Widget HTML is self-contained via inline styles,
@@ -41,14 +39,6 @@ ${widgetHtml}
 `;
 }
 
-/** Strip leading/trailing markdown code fences (defensive — model is told not to include them). */
-function stripCodeFences(code: string): string {
-  let s = code.trim();
-  s = s.replace(/^```(?:tsx|jsx|typescript|ts|javascript|js)?\s*\n/, "");
-  s = s.replace(/\n```\s*$/, "");
-  return s;
-}
-
 function triggerDownload(content: string, ext: string, mime: string): void {
   const blob = new Blob([content], { type: `${mime};charset=utf-8` });
   const url = URL.createObjectURL(blob);
@@ -62,17 +52,10 @@ function triggerDownload(content: string, ext: string, mime: string): void {
   URL.revokeObjectURL(url);
 }
 
-/** Download the widget — HTML mode → standalone .html doc; React mode → raw .tsx. */
-export function downloadWidget(content: string, format: OutputFormat): void {
-  if (format === "react") {
-    triggerDownload(stripCodeFences(content), "tsx", "text/plain");
-  } else {
-    triggerDownload(wrapWidgetAsDocument(content), "html", "text/html");
-  }
+export function downloadWidget(content: string): void {
+  triggerDownload(wrapWidgetAsDocument(content), "html", "text/html");
 }
 
-/** Copy the widget source to the clipboard (HTML or TSX, no wrapper). */
-export async function copyWidget(content: string, format: OutputFormat): Promise<void> {
-  const text = format === "react" ? stripCodeFences(content) : content;
-  await navigator.clipboard.writeText(text);
+export async function copyWidget(content: string): Promise<void> {
+  await navigator.clipboard.writeText(content);
 }

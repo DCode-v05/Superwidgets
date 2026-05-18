@@ -1,15 +1,13 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import type { EngineEvent, ChatMessage, OutputFormat } from "@/lib/types/engine-widgets";
+import type { EngineEvent, ChatMessage } from "@/lib/types/engine-widgets";
 import type { ProviderId } from "@/lib/engine/providers";
 import { uid } from "@/lib/utils";
 
 export interface SendOpts {
   providerId: ProviderId;
   useSkill: boolean;
-  pipeline: boolean;
-  outputFormat: OutputFormat;
 }
 
 interface UseChatReturn {
@@ -109,9 +107,7 @@ export function useChat(): UseChatReturn {
       role: "assistant",
       text: "",
       widgetHtml: null,
-      outputFormat: opts.outputFormat,
       useSkill: opts.useSkill,
-      pipeline: opts.pipeline,
       isStreaming: true,
     };
 
@@ -129,8 +125,6 @@ export function useChat(): UseChatReturn {
           history,
           providerId: opts.providerId,
           useSkill: opts.useSkill,
-          pipeline: opts.pipeline,
-          outputFormat: opts.outputFormat,
         }),
         signal: ctrl.signal,
       });

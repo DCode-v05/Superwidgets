@@ -1,4 +1,4 @@
-- [**Session state — comprehensive snapshot**](session_state.md) — **READ FIRST.** Current architecture, verified pricing, UI controls, production recommendation, optimization roadmap, file layout, recent decisions, gotchas. Single source of truth as of 2026-05-13.
+- [**HTML-Subagent architecture**](architecture_html_subagent.md) — **READ FIRST.** Current state (post 2026-05-18 cleanup): HTML-only output, single-call mode only, 7 models × Skill ON/OFF. Pipeline + React removed; agentic-loop attempt was reverted.
+- [Session state — historical snapshot](session_state.md) — Pre-2026-05-18 state including Pipeline + React features (now removed). Pricing, file layout, gotchas still accurate; UI surface + execution modes are stale.
 - [User profile — Deni](user_profile.md) — Intern at September Platforms, sole builder of mini-bap prototype.
 - [Mini-bap purpose & BAP integration](project_mini_bap_purpose.md) — mini-bap is a prototype for a Subagent/Skill that will add interactive widget responses to the main BAP product (today plain-text only).
-- [HTML-Subagent architecture](architecture_html_subagent.md) — Architectural detail: HTML/React output, single-call OR pipeline mode, per-widget specialist skills, usage footer per response.
