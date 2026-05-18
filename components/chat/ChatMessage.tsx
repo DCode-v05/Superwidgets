@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Download, Copy, Check, AlertOctagon } from "lucide-react";
-import type { ChatMessage as ChatMessageType, UsageReport, OutputFormat } from "@/lib/types/engine-widgets";
+import type { ChatMessage as ChatMessageType, UsageReport } from "@/lib/types/engine-widgets";
 import { OutputSystem } from "@/components/output/OutputSystem";
 import { downloadWidget, copyWidget } from "@/lib/download-widget";
 import { MODEL_INFO } from "@/lib/engine/model-info";
@@ -48,17 +48,13 @@ export function ChatMessage({ message }: ChatMessageProps) {
             <ApiErrorBanner error={message.error} />
           )}
           {message.widgetHtml && !message.isStreaming && (
-            <WidgetActions
-              content={message.widgetHtml}
-              format={message.outputFormat ?? "html"}
-            />
+            <WidgetActions content={message.widgetHtml} />
           )}
           {message.usage && (
             <UsageFooter
               usage={message.usage}
               useSkill={message.useSkill}
               pipeline={message.pipeline}
-              outputFormat={message.outputFormat}
             />
           )}
         </div>
@@ -67,12 +63,12 @@ export function ChatMessage({ message }: ChatMessageProps) {
   );
 }
 
-function WidgetActions({ content, format }: { content: string; format: OutputFormat }) {
+function WidgetActions({ content }: { content: string }) {
   const [copied, setCopied] = useState(false);
 
   const onCopy = async () => {
     try {
-      await copyWidget(content, format);
+      await copyWidget(content, "html");
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -80,15 +76,11 @@ function WidgetActions({ content, format }: { content: string; format: OutputFor
     }
   };
 
-  const onDownload = () => downloadWidget(content, format);
-  const downloadLabel = format === "react" ? "Download .tsx" : "Download .html";
-  const copyLabel = format === "react" ? "Copy TSX" : "Copy HTML";
-  const downloadTitle = format === "react"
-    ? "Download as standalone .tsx component file"
-    : "Download as standalone .html file";
-  const copyTitle = format === "react"
-    ? "Copy React TSX source to clipboard"
-    : "Copy widget HTML to clipboard";
+  const onDownload = () => downloadWidget(content, "html");
+  const downloadLabel = "Download .html";
+  const copyLabel = "Copy HTML";
+  const downloadTitle = "Download as standalone .html file";
+  const copyTitle = "Copy widget HTML to clipboard";
 
   return (
     <div className="flex items-center gap-2 px-1">
@@ -168,10 +160,9 @@ interface UsageFooterProps {
   usage: UsageReport;
   useSkill?: boolean;
   pipeline?: boolean;
-  outputFormat?: OutputFormat;
 }
 
-function UsageFooter({ usage, useSkill, pipeline, outputFormat }: UsageFooterProps) {
+function UsageFooter({ usage, useSkill, pipeline }: UsageFooterProps) {
   const hitPct = Math.round(usage.cacheHitRate * 100);
   const total = usage.inputTokens + usage.outputTokens;
   const meta = getModelMeta(usage.providerId);
@@ -222,11 +213,6 @@ function UsageFooter({ usage, useSkill, pipeline, outputFormat }: UsageFooterPro
       {/* Secondary line: which model + config produced this */}
       <div className="flex items-center gap-x-2 gap-y-1 flex-wrap text-[10px] font-mono uppercase tracking-[0.15em] text-[var(--secondary)]">
         <span className="text-[var(--foreground)]">{meta.label}</span>
-        {outputFormat && (
-          <span className="px-1.5 py-0.5 rounded border border-[var(--border)] text-[9px]">
-            {outputFormat}
-          </span>
-        )}
         <span
           className={
             "px-1.5 py-0.5 rounded border text-[9px] " +

@@ -37,20 +37,16 @@ function renderMessage(msg: ChatMessage): string {
 
   let widgetHtml = "";
   if (msg.widgetHtml) {
-    if (msg.outputFormat === "react") {
-      widgetHtml = `<pre class="code"><code>${escapeHtml(msg.widgetHtml)}</code></pre>`;
-    } else {
-      // HTML widgets are self-contained with inline styles — drop in as-is.
-      widgetHtml = `<div class="widget-wrap">${msg.widgetHtml}</div>`;
-    }
+    // HTML widgets are self-contained with inline styles — drop in as-is.
+    widgetHtml = `<div class="widget-wrap">${msg.widgetHtml}</div>`;
   }
 
   let usageHtml = "";
   if (msg.usage) {
     const hitPct = Math.round(msg.usage.cacheHitRate * 100);
     const skillBadge = msg.useSkill ? `<span class="badge badge-on">+skill</span>` : `<span class="badge">no skill</span>`;
-    const pipelineBadge = msg.pipeline ? `<span class="badge badge-on">pipeline</span>` : `<span class="badge">single</span>`;
-    const formatBadge = msg.outputFormat ? `<span class="badge">${msg.outputFormat}</span>` : "";
+    const pipelineBadge = msg.pipeline ? `<span class="badge badge-on">agent</span>` : `<span class="badge">single</span>`;
+    const formatBadge = `<span class="badge">html</span>`;
     usageHtml = `
       <div class="usage">
         <span><b>${formatTokens(msg.usage.inputTokens)}</b> in</span>

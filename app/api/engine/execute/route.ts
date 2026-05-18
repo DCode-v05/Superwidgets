@@ -16,7 +16,7 @@ interface RequestBody {
 }
 
 function isOutputFormat(v: unknown): v is OutputFormat {
-  return v === "html" || v === "react" || v === "typed";
+  return v === "html";
 }
 
 export async function POST(req: NextRequest) {

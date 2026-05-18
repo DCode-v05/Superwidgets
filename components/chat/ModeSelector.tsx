@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Wand2, Brain, Code2, FileCode, Lightbulb, Boxes } from "lucide-react";
+import { ChevronDown, Wand2, Brain, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PROVIDER_IDS, type ProviderId } from "@/lib/engine/providers";
 import { MODEL_INFO, type ModelFamily } from "@/lib/engine/model-info";
@@ -20,7 +20,7 @@ export function selectionToOpts(sel: ChatSelection) {
     providerId: sel.providerId,
     useSkill: sel.useSkill ?? false,
     pipeline: sel.pipeline ?? false,
-    outputFormat: sel.outputFormat ?? "html",
+    outputFormat: "html" as OutputFormat,
   };
 }
 
@@ -32,7 +32,6 @@ interface ModeSelectorProps {
 
 export function ModeSelector({ selection, onChange, disabled }: ModeSelectorProps) {
   const active = MODEL_INFO[selection.providerId];
-  const format: OutputFormat = selection.outputFormat ?? "html";
   const useSkill: boolean = selection.useSkill ?? false;
   const pipeline: boolean = selection.pipeline ?? false;
 
@@ -68,93 +67,42 @@ export function ModeSelector({ selection, onChange, disabled }: ModeSelectorProp
           <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-[var(--secondary)] pointer-events-none" strokeWidth={1.75} />
         </div>
 
-      {/* HTML | React segmented pill */}
-      <div
-        className={cn(
-          "inline-flex rounded-full border border-[var(--border)] bg-[var(--surface)] p-0.5",
-          disabled && "opacity-60 pointer-events-none",
-        )}
-      >
         <button
           type="button"
-          onClick={() => onChange({ ...selection, outputFormat: "html" })}
-          title="Model emits rendered HTML — drops live into the chat bubble"
+          onClick={() => onChange({ ...selection, useSkill: !useSkill })}
+          disabled={disabled}
+          title="Prepend the Frontend Design Skill to the system prompt"
           className={cn(
-            "inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-medium transition-colors",
-            format === "html"
-              ? "bg-accent text-white"
-              : "text-[var(--secondary)] hover:text-[var(--foreground)]",
+            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-medium transition-colors",
+            useSkill
+              ? "bg-accent text-white border-accent"
+              : "border-[var(--border)] bg-[var(--surface)] text-[var(--secondary)] hover:text-[var(--foreground)] hover:border-accent/40",
+            disabled && "opacity-60 pointer-events-none",
           )}
         >
-          <FileCode className="h-3 w-3" strokeWidth={1.75} />
-          HTML
+          <Wand2 className="h-3 w-3" strokeWidth={1.75} />
+          Skill {useSkill ? "ON" : "OFF"}
         </button>
-        <button
-          type="button"
-          onClick={() => onChange({ ...selection, outputFormat: "react" })}
-          title="Model emits React TSX component source — rendered live via react-live, downloadable as .tsx"
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-medium transition-colors",
-            format === "react"
-              ? "bg-accent text-white"
-              : "text-[var(--secondary)] hover:text-[var(--foreground)]",
-          )}
-        >
-          <Code2 className="h-3 w-3" strokeWidth={1.75} />
-          React
-        </button>
-        <button
-          type="button"
-          onClick={() => onChange({ ...selection, outputFormat: "typed" })}
-          title="Model emits typed <ui-widget kind=...>JSON</ui-widget> directives — dispatched to dedicated React renderers (the architecture from the README)"
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-medium transition-colors",
-            format === "typed"
-              ? "bg-accent text-white"
-              : "text-[var(--secondary)] hover:text-[var(--foreground)]",
-          )}
-        >
-          <Boxes className="h-3 w-3" strokeWidth={1.75} />
-          Typed
-        </button>
-      </div>
 
-      <button
-        type="button"
-        onClick={() => onChange({ ...selection, useSkill: !useSkill })}
-        disabled={disabled}
-        title="Prepend the Frontend Design Skill to the system prompt"
-        className={cn(
-          "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-medium transition-colors",
-          useSkill
-            ? "bg-accent text-white border-accent"
-            : "border-[var(--border)] bg-[var(--surface)] text-[var(--secondary)] hover:text-[var(--foreground)] hover:border-accent/40",
-          disabled && "opacity-60 pointer-events-none",
-        )}
-      >
-        <Wand2 className="h-3 w-3" strokeWidth={1.75} />
-        Skill {useSkill ? "ON" : "OFF"}
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onChange({ ...selection, pipeline: !pipeline })}
-        disabled={disabled}
-        title="Agent: a Skill Decision Agent runs a 2-round reasoning loop (propose → critique → commit) to pick the best widget kind, then a specialist renders it. 3 LLM calls per turn. The reasoning is shown above the widget."
-        className={cn(
-          "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-medium transition-colors",
-          pipeline
-            ? "bg-accent text-white border-accent"
-            : "border-[var(--border)] bg-[var(--surface)] text-[var(--secondary)] hover:text-[var(--foreground)] hover:border-accent/40",
-          disabled && "opacity-60 pointer-events-none",
-        )}
-      >
-        <Brain className="h-3 w-3" strokeWidth={1.75} />
-        Agent {pipeline ? "ON" : "OFF"}
-      </button>
+        <button
+          type="button"
+          onClick={() => onChange({ ...selection, pipeline: !pipeline })}
+          disabled={disabled}
+          title="Agent: recursive Skill Decision Agent (propose → reflect → commit, 1..4 rounds) picks the widget kind, then a specialist renders it. The reasoning is shown above the widget."
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-medium transition-colors",
+            pipeline
+              ? "bg-accent text-white border-accent"
+              : "border-[var(--border)] bg-[var(--surface)] text-[var(--secondary)] hover:text-[var(--foreground)] hover:border-accent/40",
+            disabled && "opacity-60 pointer-events-none",
+          )}
+        >
+          <Brain className="h-3 w-3" strokeWidth={1.75} />
+          Agent {pipeline ? "ON" : "OFF"}
+        </button>
 
         <div className="ml-auto text-[10px] uppercase tracking-[0.2em] text-[var(--secondary)] font-mono select-none">
-          {active?.family} · {active?.label} · {format.toUpperCase()}
+          {active?.family} · {active?.label}
           {useSkill ? " · +skill" : ""}
           {pipeline ? " · agent→specialist" : " · single-call"}
         </div>

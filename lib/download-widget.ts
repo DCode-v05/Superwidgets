@@ -41,14 +41,6 @@ ${widgetHtml}
 `;
 }
 
-/** Strip leading/trailing markdown code fences (defensive — model is told not to include them). */
-function stripCodeFences(code: string): string {
-  let s = code.trim();
-  s = s.replace(/^```(?:tsx|jsx|typescript|ts|javascript|js)?\s*\n/, "");
-  s = s.replace(/\n```\s*$/, "");
-  return s;
-}
-
 function triggerDownload(content: string, ext: string, mime: string): void {
   const blob = new Blob([content], { type: `${mime};charset=utf-8` });
   const url = URL.createObjectURL(blob);
@@ -62,17 +54,14 @@ function triggerDownload(content: string, ext: string, mime: string): void {
   URL.revokeObjectURL(url);
 }
 
-/** Download the widget — HTML mode → standalone .html doc; React mode → raw .tsx. */
-export function downloadWidget(content: string, format: OutputFormat): void {
-  if (format === "react") {
-    triggerDownload(stripCodeFences(content), "tsx", "text/plain");
-  } else {
-    triggerDownload(wrapWidgetAsDocument(content), "html", "text/html");
-  }
+/** Download the widget as a standalone .html document, opens directly in a browser. */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function downloadWidget(content: string, _format?: OutputFormat): void {
+  triggerDownload(wrapWidgetAsDocument(content), "html", "text/html");
 }
 
-/** Copy the widget source to the clipboard (HTML or TSX, no wrapper). */
-export async function copyWidget(content: string, format: OutputFormat): Promise<void> {
-  const text = format === "react" ? stripCodeFences(content) : content;
-  await navigator.clipboard.writeText(text);
+/** Copy the widget HTML source to the clipboard. */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function copyWidget(content: string, _format?: OutputFormat): Promise<void> {
+  await navigator.clipboard.writeText(content);
 }

@@ -25,7 +25,6 @@ interface AssistantBuilder {
   id: string;
   text: string;
   widgetHtml: string | null;
-  typedWidgets: ChatMessage["typedWidgets"];
   agentDecision: ChatMessage["agentDecision"];
   usage: ChatMessage["usage"];
   error: ChatMessage["error"];
@@ -38,9 +37,6 @@ function applyEvent(builder: AssistantBuilder, ev: EngineEvent): boolean {
       return false;
     case "widget_html":
       builder.widgetHtml = ev.html;
-      return false;
-    case "typed_widget":
-      builder.typedWidgets = [...(builder.typedWidgets ?? []), ev.widget];
       return false;
     case "agent_thought":
       // Intermediate trace — we don't surface this in state because the
@@ -158,7 +154,6 @@ export function useChat(): UseChatReturn {
         id: assistantId,
         text: "",
         widgetHtml: null,
-        typedWidgets: undefined,
         agentDecision: undefined,
         usage: undefined,
         error: undefined,
@@ -174,7 +169,6 @@ export function useChat(): UseChatReturn {
                   ...m,
                   text: builder.text,
                   widgetHtml: builder.widgetHtml,
-                  typedWidgets: builder.typedWidgets,
                   agentDecision: builder.agentDecision,
                   usage: builder.usage,
                   error: builder.error,

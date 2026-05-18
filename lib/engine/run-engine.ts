@@ -1,12 +1,9 @@
 import type { EngineEvent, OutputFormat } from "@/lib/types/engine-widgets";
 import { runWidgetParser } from "./widget-parser";
-import { runTypedWidgetParser } from "./widget-parser-typed";
 import { getProvider, type ProviderId } from "./providers";
 import type { UsageMetadata } from "./providers/types";
 import { SYSTEM_PROMPT_FREEFORM } from "./system-prompt-freeform";
-import { SYSTEM_PROMPT_TYPED } from "./system-prompt-typed";
 import { FRONTEND_DESIGN_SKILL } from "./frontend-design-skill";
-import { REACT_MODE_OVERRIDE } from "./react-mode-override";
 import { composeSpecialistPrompt } from "./skills";
 import { computeCost } from "./pricing";
 import { runAgent } from "./agent-runner";
@@ -21,35 +18,12 @@ import {
 } from "./logger";
 
 const SKILL_SEPARATOR = "\n\n---\n\n";
-const REACT_SEPARATOR = "\n\n---\n\n";
 
 export interface RunEngineOpts {
   providerId: ProviderId;
   useSkill: boolean;
   pipeline: boolean;
   outputFormat: OutputFormat;
-}
-
-/**
- * Build the system prompt for a given output format.
- *
- * - "html"  → SYSTEM_PROMPT_FREEFORM as-is (model emits raw HTML inside sentinels)
- * - "react" → SYSTEM_PROMPT_FREEFORM + REACT_MODE_OVERRIDE (model emits TSX inside sentinels)
- * - "typed" → SYSTEM_PROMPT_TYPED entirely (different output contract — model emits
- *             <ui-widget kind="..." id="...">JSON</ui-widget> directives)
- */
-function basePromptForFormat(outputFormat: OutputFormat): string {
-  if (outputFormat === "typed") return SYSTEM_PROMPT_TYPED;
-  if (outputFormat === "react") return SYSTEM_PROMPT_FREEFORM + REACT_SEPARATOR + REACT_MODE_OVERRIDE;
-  return SYSTEM_PROMPT_FREEFORM;
-}
-
-/** Pick the right widget-stream parser for the chosen output format. */
-function parseStreamForFormat(
-  outputFormat: OutputFormat,
-  tokens: AsyncGenerator<string>,
-): AsyncGenerator<EngineEvent> {
-  return outputFormat === "typed" ? runTypedWidgetParser(tokens) : runWidgetParser(tokens);
 }
 
 export async function* runEngine(
@@ -70,8 +44,9 @@ async function* runSingleMode(
   opts: RunEngineOpts,
 ): AsyncGenerator<EngineEvent> {
   const provider = getProvider(opts.providerId);
-  const base = basePromptForFormat(opts.outputFormat);
-  const systemPrompt = opts.useSkill ? FRONTEND_DESIGN_SKILL + SKILL_SEPARATOR + base : base;
+  const systemPrompt = opts.useSkill
+    ? FRONTEND_DESIGN_SKILL + SKILL_SEPARATOR + SYSTEM_PROMPT_FREEFORM
+    : SYSTEM_PROMPT_FREEFORM;
 
   const turnId = logTurnStart({
     message,
@@ -88,10 +63,8 @@ async function* runSingleMode(
 
   try {
     const result = provider(systemPrompt, message, history);
-    for await (const ev of parseStreamForFormat(opts.outputFormat, result.stream)) {
-      if (ev.type === "typed_widget") {
-        logEvent(turnId, "typed_widget", `kind=${ev.widget.kind} id=${ev.widget.id}`);
-      } else if (ev.type === "widget_html") {
+    for await (const ev of runWidgetParser(result.stream)) {
+      if (ev.type === "widget_html") {
         logEvent(turnId, "widget_html", `bytes=${ev.html.length}`);
       } else if (ev.type === "error") {
         ok = false;
@@ -178,29 +151,13 @@ async function* runPipelineMode(
   // The committed decision — frontend uses this to render AgentDecisionPanel.
   yield { type: "agent_decision", decision };
 
-  // === STAGE 2: specialist ===
-  // For typed mode the specialist is the monolithic typed prompt (covers all
-  // 10 intents already), since per-intent typed specialists don't exist yet.
-  // For html/react we use the focused skill file for `intent`.
-  let specialistPrompt: string;
-  if (opts.outputFormat === "typed") {
-    specialistPrompt = opts.useSkill
-      ? FRONTEND_DESIGN_SKILL + SKILL_SEPARATOR + SYSTEM_PROMPT_TYPED
-      : SYSTEM_PROMPT_TYPED;
-  } else {
-    const baseSpecialist = composeSpecialistPrompt(intent, opts.useSkill);
-    specialistPrompt =
-      opts.outputFormat === "react"
-        ? baseSpecialist + REACT_SEPARATOR + REACT_MODE_OVERRIDE
-        : baseSpecialist;
-  }
+  // === STAGE 2: specialist (HTML mode — the only supported render path) ===
+  const specialistPrompt = composeSpecialistPrompt(intent, opts.useSkill);
   logSpecialistStart(turnId, { intent, specialistPromptBytes: specialistPrompt.length });
   try {
     const specialistResult = provider(specialistPrompt, message, history);
-    for await (const ev of parseStreamForFormat(opts.outputFormat, specialistResult.stream)) {
-      if (ev.type === "typed_widget") {
-        logEvent(turnId, "typed_widget", `kind=${ev.widget.kind} id=${ev.widget.id}`);
-      } else if (ev.type === "widget_html") {
+    for await (const ev of runWidgetParser(specialistResult.stream)) {
+      if (ev.type === "widget_html") {
         logEvent(turnId, "widget_html", `bytes=${ev.html.length}`);
       } else if (ev.type === "error") {
         ok = false;
