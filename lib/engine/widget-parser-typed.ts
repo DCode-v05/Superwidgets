@@ -98,10 +98,19 @@ export async function* runTypedWidgetParser(
 
   if (state === "TEXT" && buffer) {
     yield { type: "text_delta", text: buffer };
-  } else if (state === "WIDGET") {
+    return;
+  }
+
+  if (state === "WIDGET") {
+    // Same recovery story as the HTML parser, but here the partial buffer
+    // is JSON-shaped so emitting it as widget_html would render garbage.
+    // We only surface a structured error and skip the partial.
     yield {
       type: "error",
-      message: `Unclosed widget block (no </ui-widget> seen). Kind was "${currentKind}".`,
+      message:
+        `Unclosed widget block (no </ui-widget> seen) — kind="${currentKind}". ` +
+        "The model's response was truncated mid-widget, most likely because output hit the max_tokens limit. " +
+        "Try a shorter prompt or switch to a model with a higher output cap.",
     };
   }
 }

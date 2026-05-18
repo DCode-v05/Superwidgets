@@ -1,7 +1,12 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { ProviderInvoker, UsageMetadata } from "./types";
 
-const MAX_TOKENS = 4096;
+// 4096 was too tight — rich widgets (quiz with multi-line explanations, dense
+// kpi_dashboard, calculator with multiple inputs) regularly hit the cap mid-
+// widget and produced an "Unclosed widget block" error. 8192 leaves comfortable
+// headroom for the verbose freeform-HTML output format while still being well
+// under the model's 8192-output limit on Sonnet 4.6 and the higher 64K on Haiku 4.5.
+const MAX_TOKENS = 8192;
 
 /**
  * Factory for Anthropic providers — produces a streamer pinned to the given

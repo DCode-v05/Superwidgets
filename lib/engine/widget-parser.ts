@@ -66,10 +66,24 @@ export async function* runWidgetParser(
 
   if (state === "TEXT" && buffer) {
     yield { type: "text_delta", text: buffer };
-  } else if (state === "WIDGET") {
+    return;
+  }
+
+  if (state === "WIDGET") {
+    // Best-effort recovery: stream ended mid-widget (usually max_tokens hit).
+    // Flush whatever HTML we already buffered as a widget so the partial
+    // render is at least visible, THEN surface a structured error so the UI
+    // banner can explain what happened.
+    const partial = (widgetBuffer + buffer).trim();
+    if (partial) {
+      yield { type: "widget_html", html: partial };
+    }
     yield {
       type: "error",
-      message: "Unclosed widget block (no <!--bap-widget:end--> seen)",
+      message:
+        "Unclosed widget block — the model's response was truncated before it could emit <!--bap-widget:end-->. " +
+        "Most likely the output hit the max_tokens limit mid-widget. " +
+        "Try a shorter prompt, switch to a model with a higher output cap, or use Typed mode (smaller payloads).",
     };
   }
 }

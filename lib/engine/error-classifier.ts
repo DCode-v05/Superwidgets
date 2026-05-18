@@ -103,6 +103,16 @@ export function classifyEngineError(raw: string): ClassifiedError {
     };
   }
 
+  // Unclosed widget — model truncated mid-widget (usually max_tokens).
+  if (lower.includes("unclosed widget block")) {
+    return {
+      message: "The model's reply was cut off mid-widget.",
+      hint:
+        "It likely hit the output-token cap before finishing. " +
+        "Try a shorter prompt, switch to Haiku 4.5 / GPT-4o (higher output caps), or flip Typed mode — its JSON payloads are roughly half the size of HTML.",
+    };
+  }
+
   // Fallback — surface the raw cause but mark it as unclassified
   return {
     message: raw.length > 220 ? raw.slice(0, 220) + "…" : raw,
