@@ -219,7 +219,7 @@ function UsageFooter({ usage, useSkill, pipeline, outputFormat }: UsageFooterPro
         </span>
       </div>
 
-      {/* Secondary line: which model + config produced this, and what it's best for */}
+      {/* Secondary line: which model + config produced this */}
       <div className="flex items-center gap-x-2 gap-y-1 flex-wrap text-[10px] font-mono uppercase tracking-[0.15em] text-[var(--secondary)]">
         <span className="text-[var(--foreground)]">{meta.label}</span>
         {outputFormat && (
@@ -249,15 +249,17 @@ function UsageFooter({ usage, useSkill, pipeline, outputFormat }: UsageFooterPro
         >
           {pipeline ? "agent" : "single"}
         </span>
-        {meta.bestFor && (
-          <span
-            className="normal-case tracking-normal text-[10px] opacity-70 ml-1 truncate max-w-[42ch]"
-            title={meta.bestFor}
-          >
-            · best for: {meta.bestFor}
-          </span>
-        )}
       </div>
+
+      {/* Tertiary line: full "Best for" recommendation — wraps naturally, never truncated */}
+      {meta.bestFor && (
+        <div className="text-[11px] leading-relaxed text-[var(--secondary)]">
+          <span className="font-mono uppercase tracking-[0.15em] text-[10px] text-[var(--foreground)] mr-1.5">
+            Best for
+          </span>
+          {meta.bestFor}
+        </div>
+      )}
     </div>
   );
 }

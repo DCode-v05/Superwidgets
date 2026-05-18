@@ -79,7 +79,10 @@ export function AgentDecisionPanel({ decision }: { decision: AgentDecision }) {
               overridden
             </span>
           )}
-          <span className="text-[11px] text-[var(--secondary)] truncate flex-1 min-w-[10ch]">
+          <span
+            className="text-[11px] text-[var(--secondary)] truncate flex-1 min-w-[10ch]"
+            title={decision.rationale}
+          >
             {decision.rationale}
           </span>
         </div>
