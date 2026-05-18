@@ -12,18 +12,22 @@ import {
   type ChatSelection,
 } from "./ModeSelector";
 import { CostCalculator } from "./CostCalculator";
+import { PromptLibrary } from "./PromptLibrary";
 import { downloadChatPage } from "@/lib/download-page";
 
 const DEFAULT_SELECTION: ChatSelection = {
   providerId: "sonnet",
   useSkill: false,
-  pipeline: false,
+  // Agent ON by default — the recursive decision loop runs unless the user
+  // turns it off. Matches the DCode-v05 default behaviour.
+  pipeline: true,
   outputFormat: "html",
 };
 
 export function ChatShell() {
   const { messages, isStreaming, error, send, reset } = useChat();
   const [selection, setSelection] = useState<ChatSelection>(DEFAULT_SELECTION);
+  const [libraryOpen, setLibraryOpen] = useState(false);
 
   const sendWithMode = useCallback(
     (message: string) => send(message, selectionToOpts(selection)),
@@ -69,6 +73,12 @@ export function ChatShell() {
           </span>
         </div>
         <div className="flex items-center gap-5">
+          <PromptLibrary
+            open={libraryOpen}
+            onOpenChange={setLibraryOpen}
+            onPick={sendWithMode}
+            disabled={isStreaming}
+          />
           <CostCalculator />
           <button
             onClick={() => downloadChatPage(messages)}
@@ -92,7 +102,7 @@ export function ChatShell() {
 
       <div className="relative z-10 flex-1 overflow-hidden flex flex-col">
         {messages.length === 0 ? (
-          <EmptyState onPick={sendWithMode} />
+          <EmptyState onOpenPrompts={() => setLibraryOpen(true)} />
         ) : (
           <ChatMessageList messages={messages} />
         )}

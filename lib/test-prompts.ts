@@ -1,97 +1,200 @@
 /**
- * Demo prompts for the Empty State — one prompt per intent, grouped by
- * category. 22 widgets total = 10 original + 10 teammate + 2 unique-to-me.
+ * Demo prompts grouped by widget intent — two prompts per kind so the
+ * PromptLibrary drawer has 22 × 2 = 44 one-click samples.
  *
- * Used by [components/chat/EmptyState.tsx] for one-click demos of each
- * widget kind. Shape changed in v3 to group by category with headings.
+ * Consumed by [components/chat/PromptLibrary.tsx]. The legacy
+ * PROMPT_CATEGORIES export below preserves the older grouped-by-category
+ * shape used by EmptyState before it was simplified.
  */
 
-export interface PromptItem {
+export interface PromptGroup {
   kind: string;
   label: string;
-  prompt: string;
+  prompts: string[];
 }
 
-export interface PromptCategory {
-  /** Section heading. */
-  category: string;
-  /** Optional one-line description shown under the heading. */
-  hint?: string;
-  items: PromptItem[];
-}
-
-export const PROMPT_CATEGORIES: PromptCategory[] = [
+export const TEST_PROMPTS: PromptGroup[] = [
+  // Conversational & decision
   {
-    category: "Conversational",
-    hint: "Open-ended — agent falls back here when nothing else fits.",
-    items: [
-      { kind: "chips", label: "Chips", prompt: "Hello — what can you do?" },
+    kind: "chips",
+    label: "Conversational",
+    prompts: [
+      "Hello — what can you do?",
+      "What should I ask you about?",
     ],
   },
   {
-    category: "Decision & confirmation",
-    hint: "Pick-one or destructive-action gates.",
-    items: [
-      { kind: "decision_card", label: "Decision card", prompt: "Should I use REST or GraphQL for my new API?" },
-      { kind: "confirm_card", label: "Confirm card", prompt: "Send a cold email to 200 prospects from my list" },
+    kind: "decision_card",
+    label: "Decision",
+    prompts: [
+      "Should I use REST or GraphQL for my new API?",
+      "Help me choose between TypeScript and Python for a new microservice",
     ],
   },
   {
-    category: "Plans & lists",
-    hint: "Sequence, checklist, or dated history.",
-    items: [
-      { kind: "stepper", label: "Stepper", prompt: "Plan a product launch in 5 steps" },
-      { kind: "checklist", label: "Checklist", prompt: "Give me a code review checklist for a Next.js PR" },
-      { kind: "timeline", label: "Timeline", prompt: "Show me the history of Y Combinator as a timeline" },
+    kind: "confirm_card",
+    label: "Confirm",
+    prompts: [
+      "Send a cold email to 200 prospects from my list",
+      "Delete all branches older than 6 months from the repo",
+    ],
+  },
+  // Plans & lists
+  {
+    kind: "stepper",
+    label: "Stepper",
+    prompts: [
+      "Plan a product launch in 5 steps",
+      "Walk me through onboarding a new backend engineer",
     ],
   },
   {
-    category: "Data",
-    hint: "Tabular, trend, breakdown, density, citations.",
-    items: [
-      { kind: "table", label: "Table", prompt: "Compare AWS Lambda, Vercel Functions, and Cloudflare Workers in a table" },
-      { kind: "chart", label: "Chart", prompt: "Show me revenue trend over the last 6 months" },
-      { kind: "pie_chart", label: "Pie chart", prompt: "Pie chart of typical SaaS startup expenses" },
-      { kind: "heatmap", label: "Heatmap", prompt: "Heatmap of website traffic by day × hour" },
-      { kind: "source_cards", label: "Source cards", prompt: "Tell me about Y Combinator with 3 sources" },
+    kind: "checklist",
+    label: "Checklist",
+    prompts: [
+      "Give me a code review checklist for a Next.js PR",
+      "What should I check before going live with a new feature?",
     ],
   },
   {
-    category: "Diagrams",
-    hint: "Flows, overlaps, brainstorms.",
-    items: [
-      { kind: "flowchart", label: "Flowchart", prompt: "Draw a flowchart for handling a refund request" },
-      { kind: "venn_diagram", label: "Venn diagram", prompt: "Venn diagram: data engineer vs data scientist vs analytics engineer" },
-      { kind: "mind_map", label: "Mind map", prompt: "Mind map of skills for a senior backend engineer" },
+    kind: "timeline",
+    label: "Timeline",
+    prompts: [
+      "Show me the history of Y Combinator as a timeline",
+      "Give me a 2026 product roadmap timeline",
+    ],
+  },
+  // Data
+  {
+    kind: "table",
+    label: "Table",
+    prompts: [
+      "Compare AWS Lambda, Vercel Functions, and Cloudflare Workers in a table",
+      "Show me a feature matrix for popular React state libraries",
     ],
   },
   {
-    category: "Dashboards",
-    hint: "Snapshots, people, boards, pricing.",
-    items: [
-      { kind: "kpi_dashboard", label: "KPI dashboard", prompt: "SaaS KPI dashboard: MRR, churn, ARPU, NPS" },
-      { kind: "profile_card", label: "Profile card", prompt: "Profile card for a fictional staff engineer" },
-      { kind: "kanban_board", label: "Kanban board", prompt: "Kanban board for a 3-person team shipping a feature" },
-      { kind: "pricing_table", label: "Pricing table", prompt: "Compare your Free, Pro, and Enterprise plans" },
+    kind: "chart",
+    label: "Chart",
+    prompts: [
+      "Show me revenue trend over the last 6 months",
+      "Visualize quarterly user growth as a bar chart",
     ],
   },
   {
-    category: "Interactive",
-    hint: "Live recompute + scored quizzes.",
-    items: [
-      { kind: "calculator", label: "Calculator", prompt: "Tip calculator with bill, people, tip slider" },
-      { kind: "quiz", label: "Quiz", prompt: "3-question quiz about HTTP status codes" },
+    kind: "pie_chart",
+    label: "Pie chart",
+    prompts: [
+      "Pie chart of typical SaaS startup expenses",
+      "Show market share of top 4 cloud providers as a pie chart",
     ],
   },
   {
-    category: "Code & status",
-    hint: "Snippets and one-line notices.",
-    items: [
-      { kind: "code_block", label: "Code block", prompt: "Write a Python function that fetches a URL with retries" },
-      { kind: "inline_banner", label: "Inline banner", prompt: "Confirm that my deploy to production went through successfully" },
+    kind: "heatmap",
+    label: "Heatmap",
+    prompts: [
+      "Heatmap of website traffic by day × hour",
+      "Visualize incident frequency by team × severity as a heatmap",
+    ],
+  },
+  {
+    kind: "source_cards",
+    label: "Sources",
+    prompts: [
+      "Tell me about Y Combinator with sources",
+      "Find me 3 reputable articles about prompt caching",
+    ],
+  },
+  // Diagrams
+  {
+    kind: "flowchart",
+    label: "Flowchart",
+    prompts: [
+      "Draw a flowchart for handling a refund request",
+      "Trace the OAuth 2.0 authorization-code flow",
+    ],
+  },
+  {
+    kind: "venn_diagram",
+    label: "Venn diagram",
+    prompts: [
+      "Venn diagram: data engineer vs data scientist vs analytics engineer",
+      "Show what UX, product, and engineering have in common as a Venn",
+    ],
+  },
+  {
+    kind: "mind_map",
+    label: "Mind map",
+    prompts: [
+      "Mind map of skills for a senior backend engineer",
+      "Brainstorm a launch campaign as a mind map",
+    ],
+  },
+  // Dashboards
+  {
+    kind: "kpi_dashboard",
+    label: "KPI dashboard",
+    prompts: [
+      "SaaS KPI dashboard: MRR, churn, ARPU, NPS",
+      "Show me ops KPIs for Q1 — uptime, p99 latency, error rate",
+    ],
+  },
+  {
+    kind: "profile_card",
+    label: "Profile card",
+    prompts: [
+      "Profile card for a fictional staff engineer",
+      "Profile card for the head of growth at a Series B SaaS",
+    ],
+  },
+  {
+    kind: "kanban_board",
+    label: "Kanban board",
+    prompts: [
+      "Kanban board for a 3-person team shipping a feature",
+      "Show me a sprint board with 3 tasks in progress and 2 blocked",
+    ],
+  },
+  {
+    kind: "pricing_table",
+    label: "Pricing table",
+    prompts: [
+      "Compare your Free, Pro, and Enterprise plans",
+      "Show me a pricing table for a developer-tools subscription",
+    ],
+  },
+  // Interactive
+  {
+    kind: "calculator",
+    label: "Calculator",
+    prompts: [
+      "Tip calculator with bill, people, tip slider",
+      "Build a quick mortgage calculator with principal, rate, term",
+    ],
+  },
+  {
+    kind: "quiz",
+    label: "Quiz",
+    prompts: [
+      "3-question quiz about HTTP status codes",
+      "Quiz me on SQL JOIN types",
+    ],
+  },
+  // Code & status
+  {
+    kind: "code_block",
+    label: "Code block",
+    prompts: [
+      "Write a Python function that fetches a URL with retries",
+      "Show me a SQL query to find duplicate email addresses",
+    ],
+  },
+  {
+    kind: "inline_banner",
+    label: "Inline banner",
+    prompts: [
+      "Confirm that my deploy to production went through successfully",
+      "Warn me about the deprecation of an old API version",
     ],
   },
 ];
-
-/** Flat list — used by tests, eval, and any legacy import. */
-export const TEST_PROMPTS = PROMPT_CATEGORIES.flatMap((c) => c.items);
