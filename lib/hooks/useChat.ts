@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import type { EngineEvent, ChatMessage } from "@/lib/types/engine-widgets";
+import type { EngineEvent, ChatMessage, TraceStep } from "@/lib/types/engine-widgets";
 import type { ProviderId } from "@/lib/engine/providers";
 import { uid } from "@/lib/utils";
 
@@ -23,6 +23,13 @@ interface AssistantBuilder {
   text: string;
   widgetHtml: string | null;
   usage: ChatMessage["usage"];
+  trace: TraceStep[];
+  /** Look-up map for matching tool_result events back to their tool_call rows. */
+  pending: Map<string, number>;
+}
+
+function pendingKey(iteration: number, toolName: string): string {
+  return `${iteration}::${toolName}`;
 }
 
 function applyEvent(builder: AssistantBuilder, ev: EngineEvent): boolean {
@@ -30,6 +37,37 @@ function applyEvent(builder: AssistantBuilder, ev: EngineEvent): boolean {
     case "text_delta":
       builder.text += ev.text;
       return false;
+    case "tool_call": {
+      const step: TraceStep = {
+        iteration: ev.iteration,
+        toolName: ev.toolName,
+        inputSummary: ev.inputSummary,
+        resultSummary: "",
+        isError: false,
+      };
+      builder.trace.push(step);
+      builder.pending.set(pendingKey(ev.iteration, ev.toolName), builder.trace.length - 1);
+      return false;
+    }
+    case "tool_result": {
+      const key = pendingKey(ev.iteration, ev.toolName);
+      const idx = builder.pending.get(key);
+      if (idx !== undefined) {
+        builder.trace[idx].resultSummary = ev.resultSummary;
+        builder.trace[idx].isError = ev.isError;
+        builder.pending.delete(key);
+      } else {
+        // No matching call — synthesize a row
+        builder.trace.push({
+          iteration: ev.iteration,
+          toolName: ev.toolName,
+          inputSummary: "(unmatched)",
+          resultSummary: ev.resultSummary,
+          isError: ev.isError,
+        });
+      }
+      return false;
+    }
     case "widget_html":
       builder.widgetHtml = ev.html;
       return false;
@@ -108,6 +146,7 @@ export function useChat(): UseChatReturn {
       text: "",
       widgetHtml: null,
       useSkill: opts.useSkill,
+      trace: [],
       isStreaming: true,
     };
 
@@ -138,6 +177,8 @@ export function useChat(): UseChatReturn {
         text: "",
         widgetHtml: null,
         usage: undefined,
+        trace: [],
+        pending: new Map(),
       };
 
       for await (const ev of parseSse(res.body)) {
@@ -151,6 +192,7 @@ export function useChat(): UseChatReturn {
                   text: builder.text,
                   widgetHtml: builder.widgetHtml,
                   usage: builder.usage,
+                  trace: [...builder.trace],
                   isStreaming: !isDone,
                 }
               : m,

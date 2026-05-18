@@ -1,9 +1,131 @@
 ---
 name: architecture-html-subagent
-description: Mini-bap's HTML-only subagent — single-call mode, model selectable, optional Frontend Design Skill. Pipeline and React features removed 2026-05-18.
+description: Mini-bap is an HTML-widget subagent running an agentic loop (Action → Verify → OK/Loop) with 3 tools, across 7 models. Script/form allowed for interactive widgets. Rebuilt 2026-05-18 (second attempt — first revert was 2026-05-18 morning).
 metadata:
   type: project
 ---
+
+## Current state (2026-05-18 PM — agentic loop is BACK)
+
+Mini-bap runs an **agentic loop** per user turn. Pattern: **Action → Verify → OK / Loop**. Loop ends only when the terminal tool `render_widget` is called.
+
+In production, the main BAP engine (in `bap-engine` sibling at `…\BAP Product\Code\`) delegates to mini-bap with a payload. In the prototype, the payload IS the user's chat message.
+
+### The 4 tools — 3 conceptual phases ([[lib/engine/tools/]])
+
+| # | Tool | Phase | Built-in verification | Terminal? |
+|---|---|---|---|---|
+| 1 | `classify_prompt` | **CLASSIFY** — analyze prompt, infer intent + interactivity need | Sanity-checks input shape; runs keyword + interactivity scoring to suggest top widget skills | No |
+| 2 | `choose_widget` | **CHOOSE** — commit to one widget skill from the 20-skill catalog | Verifies the chosen widget exists; returns design note + reference HTML + reminders (e.g. script wrapping rules) | No |
+| 3 | `validate_widget` | **IMPLEMENT** (verify) — check HTML before submit | Sentinels, contrast rule, forbidden tags, script safety (no fetch/eval/script-src, no form-action), tag balance, size cap | No |
+| 4 | `render_widget` | **IMPLEMENT** (submit) — terminal | Re-validates as final guard before terminating the loop | **Yes** |
+
+The 20 widget intents (chips, calculator, kanban_board, …) are framed as **individual skills** in a skill catalog — analogous to engine-peripherals' `utility_directory` user_skills table. The CHOOSE phase picks one skill per turn.
+
+### Loop ([[lib/engine/run-engine.ts]])
+
+```
+PHASE 1: classify_prompt  (verify: input shape + suggest skills)
+PHASE 2: choose_widget    (verify: skill exists + return design note)
+PHASE 3: compose HTML → validate_widget → if invalid loop here, else render_widget (terminal)
+
+for iter in 1..MAX_ITERATIONS (8):
+    response = provider.runAgentTurn(systemPrompt, messages, tools)
+    stream text deltas
+    collect tool_call events
+    when turn ends:
+        if no tools → break (model ended)
+        for each tool_call:
+            execute → emit tool_result event
+            if render_widget validated → break loop
+        append assistant+tools to messages
+emit widget_html + summed usage + done
+```
+
+Verification happens at EVERY phase, not just at the end — each tool runs its own checks before returning.
+
+`MAX_ITERATIONS = 8` is the circuit breaker — analogous to engine-peripherals'  `asset_directory/circuit_breaker.py` (opens after N failures on external calls).
+
+### Provider tool-use ([[lib/engine/providers/]])
+
+All 3 providers implement the same `AgentTurnInvoker` interface ([[lib/engine/providers/types.ts]]):
+- **Anthropic** — `tool_use` / `tool_result` blocks; beta prompt-caching on system prompt
+- **OpenAI** — **Responses API** (`client.responses.create`, `/v1/responses`), NOT chat completions. Uses `reasoning: { effort: "none" }` — disables reasoning entirely, ideal for the tool-dispatch loop (classify/choose/validate/render don't need it). We migrated here because `/v1/chat/completions` rejects `reasoning_effort` + `tools` for GPT-5 (returns 400). GPT-5 family's per-model vocabulary is `none/low/medium/high/xhigh` — note **NOT** `minimal` (tried first, rejected). SDK ^4.104 types only know low/medium/high; `"none"` is sent via a cast (`as "low"`). Input items: messages → `role`/`content` items, assistant tool calls → `function_call` items, tool results → `function_call_output` items.
+- **Google** — `functionDeclarations`; synthesizes call IDs since Gemini doesn't issue them
+
+### Script/form ALLOWED for interactive widgets
+
+[[components/output/HtmlBubble.tsx]] DOMPurify config permits `<script>`, `<form>`, form controls. Stripped: `<iframe>`, `<style>`, `<object>`, `<embed>`, all `on*` handlers, `script src`, `form action/method`. Post-mount shim clones each `<script>` into a fresh element so it actually executes (HTML5 spec: scripts inserted via innerHTML don't run).
+
+`validate_widget` enforces script safety: rejects fetch/XHR/WebSocket, eval/new Function/document.write, missing preventDefault on form submit. Recommends (warnings, not blockers): IIFE wrap, root id scoping.
+
+### UI ([[components/output/AgentTrace.tsx]])
+
+Collapsible "Agent loop · N steps · K iter" panel above each assistant bubble. Each row: iteration #, phase label (CLASSIFY/CHOOSE/VERIFY/SUBMIT), tool name, input summary, result summary, status icon (spinner → ✓ → ⚠). Mirrors engine-peripherals' working_memory_log shape.
+
+### SSE event schema
+
+```
+text_delta · tool_call · tool_result · widget_html · usage · error · done
+```
+
+### Calculator path (verified end-to-end)
+
+1. Model receives "Build me a tip calculator"
+2. (iter 1) Composes HTML with `<script>` IIFE, calls `validate_widget`
+3. Validation passes (script body has no fetch/eval, root has bg+color, form not present)
+4. (iter 2) Calls `render_widget` → terminal
+5. Engine extracts inner HTML, emits widget_html SSE event
+6. HtmlBubble injects via `dangerouslySetInnerHTML`
+7. useEffect shim clones `<script>` into a new element → script executes → calculator is live
+
+### Files
+
+```
+lib/engine/
+  pricing.ts                  Pricing table + cost helpers
+  system-prompt-freeform.ts   Agent definition + loop workflow + 20-intent table
+  frontend-design-skill.ts    Reads frontend-design-skill.md
+  run-engine.ts               Agentic loop orchestration (MAX_ITERATIONS=8)
+  providers/
+    types.ts                  AgentTurnInvoker, TurnEvent, StopReason
+    index.ts                  ProviderId union, getProvider
+    anthropic.ts              Anthropic agent turn (beta prompt-caching + tools)
+    openai.ts                 OpenAI agent turn (function calling)
+    google.ts                 Google agent turn (function declarations)
+  tools/
+    types.ts                  ToolDefinition, ToolCall, ToolResult, AgentMessage
+    schemas.ts                The 4 tool definitions (classify, choose, validate, render)
+    widget-library.ts         20 widget skills with keywords + needs_interactivity metadata
+    classify.ts               Phase 1 — keyword + interactivity scoring → suggested skills
+    choose.ts                 Phase 2 — verify chosen widget + return design note + reminders
+    validate.ts               Phase 3 verify — structural + script-safety checks
+    executors.ts              Dispatch + FinalRender on terminal
+    index.ts                  Re-exports
+components/output/
+  AgentTrace.tsx              Collapsible loop-step UI (GATHER/VERIFY/SUBMIT phase labels)
+  HtmlBubble.tsx              DOMPurify (script/form allowed) + script-execution shim
+  OutputSystem.tsx            Picks HtmlBubble
+  InlineTextRenderer.tsx      Markdown for assistant prose
+```
+
+### Cost trade-off
+
+Per-turn cost rises ~2–3× vs single-shot because the loop typically makes 2–3 LLM calls (validate → render, or lookup → validate → render). The prompt explicitly allows skipping `lookup_example` to drop to 2 calls. Anthropic's cache_control on system+tools keeps input cost flat across iterations.
+
+---
+
+## History (kept for context)
+
+Mini-bap went through three architectural shapes in one day (2026-05-18):
+
+1. **Morning**: Pipeline + React modes were removed per user request → reduced to HTML-only single-call mode with 10 intents.
+2. **Mid-day attempt 1**: Built an agentic loop (same 3 tools), user REVERTED it back to single-call. Then added 10 new widgets + opened `<script>`/`<form>` in DOMPurify (single-call mode with 20 intents).
+3. **Afternoon**: User asked for the agentic loop AGAIN, this time with explicit Action→Verify→OK/Loop spec and "calculator should work as expected". This is the current state.
+
+The key difference from attempt 1: validate.ts now permits `<script>` and `<form>` (matching the relaxed sanitizer), so the calculator widget passes validation.
+
+See [[project-mini-bap-purpose]] for context on how mini-bap relates to the production BAP product.
 
 **Architecture pattern:** Subagent. The subagent will be invoked by a router in bap-engine; in mini-bap (the prototype) it IS the main agent.
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Download, Copy, Check } from "lucide-react";
 import type { ChatMessage as ChatMessageType, UsageReport } from "@/lib/types/engine-widgets";
 import { OutputSystem } from "@/components/output/OutputSystem";
+import { AgentTrace } from "@/components/output/AgentTrace";
 import { downloadWidget, copyWidget } from "@/lib/download-widget";
 
 interface ChatMessageProps {
@@ -35,6 +36,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
           BAP
         </div>
         <div className="flex-1 flex flex-col gap-1.5">
+          {message.trace && (message.trace.length > 0 || message.isStreaming) && (
+            <AgentTrace steps={message.trace} isStreaming={message.isStreaming} />
+          )}
           <div className="rounded-tl-md rounded-tr-2xl rounded-bl-2xl rounded-br-2xl bg-[var(--surface)] border border-[var(--border)] px-5 py-4">
             <OutputSystem message={message} />
           </div>
