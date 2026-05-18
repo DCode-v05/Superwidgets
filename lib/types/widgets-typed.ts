@@ -14,6 +14,7 @@
  */
 
 export type WidgetKind =
+  // Original 10
   | "chips"
   | "decision_card"
   | "confirm_card"
@@ -24,11 +25,19 @@ export type WidgetKind =
   | "chart"
   | "code_block"
   | "inline_banner"
-  // New: visual / structured widgets added in v2 of the catalog
+  // Teammate's 10 (Diagrams / Charts / Dashboards / Interactive)
   | "flowchart"
-  | "kpi_tiles"
+  | "venn_diagram"
+  | "mind_map"
+  | "pie_chart"
+  | "heatmap"
+  | "kpi_dashboard"
+  | "profile_card"
+  | "kanban_board"
+  | "calculator"
+  | "quiz"
+  // My 2 unique ones
   | "timeline"
-  | "kanban"
   | "pricing_table";
 
 export const WIDGET_KINDS: WidgetKind[] = [
@@ -43,9 +52,16 @@ export const WIDGET_KINDS: WidgetKind[] = [
   "code_block",
   "inline_banner",
   "flowchart",
-  "kpi_tiles",
+  "venn_diagram",
+  "mind_map",
+  "pie_chart",
+  "heatmap",
+  "kpi_dashboard",
+  "profile_card",
+  "kanban_board",
+  "calculator",
+  "quiz",
   "timeline",
-  "kanban",
   "pricing_table",
 ];
 
@@ -159,7 +175,7 @@ export interface InlineBannerPayload {
   body?: string;
 }
 
-// ---------- v2 visual widgets ----------
+// ---------- DIAGRAMS (teammate) ----------
 
 export type FlowchartNodeShape = "rect" | "diamond" | "round" | "pill";
 export interface FlowchartNode {
@@ -175,33 +191,162 @@ export interface FlowchartEdge {
 }
 export interface FlowchartPayload {
   title?: string;
-  /** Optional layout hint — auto-laid-out left-to-right if missing. */
   direction?: "LR" | "TB";
   nodes: FlowchartNode[];
   edges: FlowchartEdge[];
 }
+
+export interface VennSet {
+  id: string;
+  label: string;
+  color?: string;
+}
+export interface VennIntersection {
+  /** Array of set ids in this intersection — order doesn't matter. */
+  sets: string[];
+  items: string[];
+}
+export interface VennDiagramPayload {
+  title?: string;
+  /** 2 or 3 sets — those are the only Venn configurations we render. */
+  sets: VennSet[];
+  intersections: VennIntersection[];
+}
+
+export interface MindMapNode {
+  id: string;
+  label: string;
+  children?: MindMapNode[];
+}
+export interface MindMapPayload {
+  title?: string;
+  root: MindMapNode;
+}
+
+// ---------- CHARTS (teammate) ----------
+
+export interface PieSlice {
+  id: string;
+  label: string;
+  value: number;
+  color?: string;
+}
+export interface PieChartPayload {
+  title?: string;
+  subtitle?: string;
+  slices: PieSlice[];
+}
+
+export interface HeatmapPayload {
+  title?: string;
+  subtitle?: string;
+  /** Column headers (e.g. hours of the day). */
+  cols: string[];
+  /** Row labels (e.g. days of the week). */
+  rows: string[];
+  /** 2D matrix: cells[row][col] — same dimensions as rows × cols. */
+  cells: number[][];
+  /** Display unit for the legend ("visits", "%", ...). */
+  unit?: string;
+}
+
+// ---------- DASHBOARDS (teammate) ----------
 
 export type KpiTone = "good" | "warn" | "bad" | "neutral";
 export interface KpiTile {
   id: string;
   label: string;
   value: string;
-  /** "+8%", "-2", "↑ 12 / wk" — model owns formatting. */
   delta?: string;
-  /** Visual tone for the delta + accent bar. */
   tone?: KpiTone;
-  /** Optional sparkline: 4–24 numeric values. Rendered as a tiny inline SVG. */
   spark?: number[];
 }
-export interface KpiTilesPayload {
+export interface KpiDashboardPayload {
   title?: string;
   subtitle?: string;
   tiles: KpiTile[];
 }
 
+export interface ProfileStat {
+  label: string;
+  value: string;
+}
+export interface ProfileCardPayload {
+  name: string;
+  role?: string;
+  bio?: string;
+  /** Initials shown as the avatar — renderer derives from name if missing. */
+  initials?: string;
+  /** Background color for the avatar tile. */
+  avatarColor?: string;
+  stats?: ProfileStat[];
+  actions?: Array<{ label: string; prompt: string; primary?: boolean }>;
+}
+
+export interface KanbanCard {
+  id: string;
+  title: string;
+  body?: string;
+  tags?: string[];
+  assignee?: string;
+}
+export interface KanbanColumn {
+  id: string;
+  title: string;
+  cards: KanbanCard[];
+}
+export interface KanbanBoardPayload {
+  title?: string;
+  columns: KanbanColumn[];
+}
+
+// ---------- INTERACTIVE (teammate) ----------
+
+export interface CalculatorInput {
+  id: string;
+  label: string;
+  /** number = numeric input · slider = range input · select = dropdown */
+  type: "number" | "slider";
+  default: number;
+  min?: number;
+  max?: number;
+  step?: number;
+  unit?: string;
+}
+export interface CalculatorOutput {
+  id: string;
+  label: string;
+  /** JS-like expression referencing input ids (e.g. "bill * (tip / 100)"). */
+  formula: string;
+  unit?: string;
+  precision?: number;
+}
+export interface CalculatorPayload {
+  title?: string;
+  subtitle?: string;
+  inputs: CalculatorInput[];
+  outputs: CalculatorOutput[];
+}
+
+export interface QuizQuestion {
+  id: string;
+  prompt: string;
+  options: Array<{ id: string; label: string }>;
+  /** id of the correct option. */
+  correctId: string;
+  /** Shown after the user picks. */
+  explanation?: string;
+}
+export interface QuizPayload {
+  title?: string;
+  subtitle?: string;
+  questions: QuizQuestion[];
+}
+
+// ---------- KEPT FROM MY 5 (unique) ----------
+
 export interface TimelineEvent {
   id: string;
-  /** Free-form date string — model picks the format ("Q1 2024", "Mar 15", "2024"). */
   date: string;
   title: string;
   body?: string;
@@ -213,40 +358,18 @@ export interface TimelinePayload {
   events: TimelineEvent[];
 }
 
-export interface KanbanCard {
-  id: string;
-  title: string;
-  body?: string;
-  tags?: string[];
-  /** Optional assignee name; shown as a small chip. */
-  assignee?: string;
-}
-export interface KanbanColumn {
-  id: string;
-  title: string;
-  cards: KanbanCard[];
-}
-export interface KanbanPayload {
-  title?: string;
-  columns: KanbanColumn[];
-}
-
 export interface PricingFeature {
   label: string;
   included: boolean;
-  /** Optional one-line note (e.g. "first 1,000 free"). */
   note?: string;
 }
 export interface PricingTier {
   id: string;
   name: string;
-  /** Display string — model owns currency/period ("$0", "$29/mo", "Custom"). */
   price: string;
-  /** Short pitch line under the price. */
   tagline?: string;
   features: PricingFeature[];
   cta: { label: string; prompt: string };
-  /** If true, this tier is visually highlighted as the recommended pick. */
   recommended?: boolean;
 }
 export interface PricingTablePayload {

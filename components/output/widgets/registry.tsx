@@ -13,15 +13,22 @@ import { TableWidget } from "./TableWidget";
 import { ChartWidget } from "./ChartWidget";
 import { CodeBlockWidget } from "./CodeBlockWidget";
 import { InlineBannerWidget } from "./InlineBannerWidget";
-// New v2 widgets
+// Teammate's 10
 import { FlowchartWidget } from "./FlowchartWidget";
-import { KpiTilesWidget } from "./KpiTilesWidget";
+import { VennDiagramWidget } from "./VennDiagramWidget";
+import { MindMapWidget } from "./MindMapWidget";
+import { PieChartWidget } from "./PieChartWidget";
+import { HeatmapWidget } from "./HeatmapWidget";
+import { KpiDashboardWidget } from "./KpiDashboardWidget";
+import { ProfileCardWidget } from "./ProfileCardWidget";
+import { KanbanBoardWidget } from "./KanbanBoardWidget";
+import { CalculatorWidget } from "./CalculatorWidget";
+import { QuizWidget } from "./QuizWidget";
+// My 2 unique
 import { TimelineWidget } from "./TimelineWidget";
-import { KanbanWidget } from "./KanbanWidget";
 import { PricingTableWidget } from "./PricingTableWidget";
 import { FallbackWidget } from "./FallbackWidget";
 
-// One file = one widget. registry maps kind → React component.
 const REGISTRY: Record<WidgetKind, React.ComponentType<{ payload: any; actions?: any }>> = {
   chips: ChipsWidget,
   decision_card: DecisionCardWidget,
@@ -34,17 +41,19 @@ const REGISTRY: Record<WidgetKind, React.ComponentType<{ payload: any; actions?:
   code_block: CodeBlockWidget,
   inline_banner: InlineBannerWidget,
   flowchart: FlowchartWidget,
-  kpi_tiles: KpiTilesWidget,
+  venn_diagram: VennDiagramWidget,
+  mind_map: MindMapWidget,
+  pie_chart: PieChartWidget,
+  heatmap: HeatmapWidget,
+  kpi_dashboard: KpiDashboardWidget,
+  profile_card: ProfileCardWidget,
+  kanban_board: KanbanBoardWidget,
+  calculator: CalculatorWidget,
+  quiz: QuizWidget,
   timeline: TimelineWidget,
-  kanban: KanbanWidget,
   pricing_table: PricingTableWidget,
 };
 
-/**
- * Dispatches a typed widget to its registered renderer. If the kind is
- * unknown OR the renderer throws at render time, falls back to FallbackWidget
- * so one bad widget can't blow up the whole bubble.
- */
 export function renderTypedWidget(widget: TypedWidget): ReactNode {
   const Renderer = REGISTRY[widget.kind];
   if (!Renderer) return <FallbackWidget widget={widget} />;
@@ -55,16 +64,13 @@ export function renderTypedWidget(widget: TypedWidget): ReactNode {
   );
 }
 
-class WidgetErrorBoundary extends Component<
-  { children: ReactNode; fallback: ReactNode },
-  { hasError: boolean }
-> {
+class WidgetErrorBoundary extends Component<{ children: ReactNode; fallback: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
   static getDerivedStateFromError() {
     return { hasError: true };
   }
   componentDidCatch(_error: Error, _info: ErrorInfo) {
-    /* swallow — fallback is shown */
+    /* swallow */
   }
   render() {
     return this.state.hasError ? this.props.fallback : this.props.children;

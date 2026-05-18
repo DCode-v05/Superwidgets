@@ -12,7 +12,7 @@ The directive grammar is exact:
   { "payload": { ...kind-specific fields... }, "actions": [ ...optional... ] }
   </ui-widget>
 
-- \`kind\` MUST be one of: chips, decision_card, confirm_card, stepper, checklist, source_cards, table, chart, code_block, inline_banner, flowchart, kpi_tiles, timeline, kanban, pricing_table.
+- \`kind\` MUST be one of: chips, decision_card, confirm_card, stepper, checklist, source_cards, table, chart, code_block, inline_banner, flowchart, venn_diagram, mind_map, pie_chart, heatmap, kpi_dashboard, profile_card, kanban_board, calculator, quiz, timeline, pricing_table.
 - \`id\` is a short unique slug per widget (e.g. "wgt_1", "chart_revenue").
 - The body between the tags MUST be valid JSON — no markdown fences, no \`\`\`json prefix, no trailing commentary.
 - \`payload\` shape is determined by \`kind\` — see schemas below.
@@ -160,41 +160,179 @@ language is a lowercase short name ("python", "typescript", "sql", "bash"). \`co
 \`\`\`
 tone ∈ "success" | "warn" | "error" | "info".
 
+## kpi_dashboard
+\`\`\`json
+{ "payload": {
+    "title": "SaaS KPIs — Q1 2026",
+    "subtitle": "vs Q4 2025",
+    "tiles": [
+      { "id": "mrr", "label": "MRR",    "value": "$124K", "delta": "+12% MoM", "tone": "good", "spark": [98,104,112,118,124] },
+      { "id": "churn","label": "Churn", "value": "2.4%",  "delta": "-0.6pp",   "tone": "good", "spark": [3.5,3.2,2.9,2.6,2.4] },
+      { "id": "arpu","label": "ARPU",   "value": "$68",   "delta": "+$4",      "tone": "good" },
+      { "id": "nps", "label": "NPS",    "value": "48",    "delta": "+6 pts",   "tone": "good" }
+    ]
+  } }
+\`\`\`
+3–6 tiles. tone ∈ "good" | "warn" | "bad" | "neutral".
+
 ## flowchart
 \`\`\`json
 { "payload": {
-    "title": "OAuth 2.0 — auth code flow",
+    "title": "Refund request flow",
     "direction": "LR",
     "nodes": [
-      { "id": "u",    "label": "User",         "shape": "pill", "tone": "default" },
-      { "id": "app",  "label": "Client app",   "shape": "rect" },
-      { "id": "auth", "label": "Auth server",  "shape": "rect" },
-      { "id": "tok",  "label": "Token endpt",  "shape": "rect" },
-      { "id": "acc",  "label": "Access token", "shape": "rect", "tone": "accent" }
+      { "id": "ask",  "label": "Customer asks", "shape": "pill" },
+      { "id": "30d",  "label": "Within 30d?",   "shape": "diamond" },
+      { "id": "auto", "label": "Auto-refund",   "shape": "rect", "tone": "good" },
+      { "id": "rev",  "label": "Manual review", "shape": "rect", "tone": "warn" }
     ],
     "edges": [
-      { "from": "u",    "to": "app",  "label": "login" },
-      { "from": "app",  "to": "auth", "label": "authorize" },
-      { "from": "auth", "to": "tok",  "label": "code" },
-      { "from": "tok",  "to": "acc",  "label": "exchange" }
+      { "from": "ask",  "to": "30d" },
+      { "from": "30d",  "to": "auto", "label": "yes" },
+      { "from": "30d",  "to": "rev",  "label": "no" }
     ]
   } }
 \`\`\`
-4–10 nodes. shape ∈ "rect" | "diamond" | "round" | "pill". direction ∈ "LR" | "TB". Renderer auto-lays out nodes in a grid based on direction.
+3–8 nodes. shape ∈ "rect" | "diamond" | "round" | "pill". tone optional.
 
-## kpi_tiles
+## venn_diagram
 \`\`\`json
 { "payload": {
-    "title": "Q1 2026 KPIs",
-    "subtitle": "vs Q4 2025",
-    "tiles": [
-      { "id": "rev",  "label": "Revenue",      "value": "$1.24M", "delta": "+18%", "tone": "good", "spark": [98,104,112,118,124] },
-      { "id": "mau",  "label": "Active users", "value": "42.8K",  "delta": "+12%", "tone": "good", "spark": [38,39,40,42,43] },
-      { "id": "err",  "label": "Error rate",   "value": "0.12%",  "delta": "-35%", "tone": "good", "spark": [0.20,0.18,0.15,0.13,0.12] }
+    "title": "Data roles overlap",
+    "sets": [
+      { "id": "de",  "label": "Data engineer" },
+      { "id": "ds",  "label": "Data scientist" },
+      { "id": "ae",  "label": "Analytics engineer" }
+    ],
+    "intersections": [
+      { "sets": ["de"],            "items": ["pipelines", "spark"] },
+      { "sets": ["ds"],            "items": ["ML", "stats"] },
+      { "sets": ["ae"],            "items": ["dbt", "modeling"] },
+      { "sets": ["de", "ds", "ae"], "items": ["SQL", "warehouses"] }
     ]
   } }
 \`\`\`
-3–6 tiles. tone ∈ "good" | "warn" | "bad" | "neutral" — colors the delta + accent bar. spark is optional (4–24 numbers).
+2 or 3 sets only.
+
+## mind_map
+\`\`\`json
+{ "payload": {
+    "title": "Senior backend engineer",
+    "root": {
+      "id": "root", "label": "Senior BE",
+      "children": [
+        { "id": "sd",  "label": "Systems design",   "children": [{"id":"sd1","label":"Capacity"}, {"id":"sd2","label":"Sharding"}] },
+        { "id": "ds",  "label": "Distributed sys",  "children": [{"id":"ds1","label":"Consensus"}] },
+        { "id": "obs", "label": "Observability" },
+        { "id": "sec", "label": "Security" }
+      ]
+    }
+  } }
+\`\`\`
+1 root + 3-6 first-level children + optional second-level.
+
+## pie_chart
+\`\`\`json
+{ "payload": {
+    "title": "SaaS startup expenses",
+    "slices": [
+      { "id": "sal", "label": "Salaries", "value": 60 },
+      { "id": "inf", "label": "Cloud",    "value": 20 },
+      { "id": "swt", "label": "SaaS tools","value": 10 },
+      { "id": "mkt", "label": "Marketing", "value": 10 }
+    ]
+  } }
+\`\`\`
+3–7 slices. Values can be percents or raw — renderer normalizes.
+
+## heatmap
+\`\`\`json
+{ "payload": {
+    "title": "Traffic by day × hour",
+    "subtitle": "last 7 days",
+    "unit": "visits",
+    "rows": ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
+    "cols": ["00-06","06-12","12-18","18-24"],
+    "cells": [
+      [120, 740, 1240, 510],
+      [150, 820, 1310, 540],
+      [140, 800, 1290, 530],
+      [145, 810, 1300, 535],
+      [200, 850, 1100, 600],
+      [280, 460, 390, 240],
+      [220, 380, 320, 200]
+    ]
+  } }
+\`\`\`
+cells.length === rows.length and each row.length === cols.length.
+
+## profile_card
+\`\`\`json
+{ "payload": {
+    "name": "Lana Morrison",
+    "role": "Staff Engineer · Platform",
+    "bio": "10 years of distributed-systems work, currently leading the billing migration.",
+    "initials": "LM",
+    "stats": [
+      { "label": "Years", "value": "10" },
+      { "label": "PRs / mo", "value": "14" },
+      { "label": "Reports", "value": "0" }
+    ],
+    "actions": [
+      { "label": "Recent PRs", "prompt": "Show me Lana's recent PRs", "primary": true },
+      { "label": "Book 30 min", "prompt": "Book 30 min with Lana" }
+    ]
+  } }
+\`\`\`
+
+## kanban_board
+\`\`\`json
+{ "payload": {
+    "title": "Sprint 24",
+    "columns": [
+      { "id": "todo", "title": "To Do",  "cards": [
+        { "id": "k1", "title": "Wire OAuth refresh", "tags": ["auth"] }
+      ] },
+      { "id": "doing","title": "Doing",  "cards": [
+        { "id": "k2", "title": "Reduce p99 latency", "assignee": "lana", "tags": ["perf"] }
+      ] },
+      { "id": "done", "title": "Done",   "cards": [
+        { "id": "k3", "title": "Ship audit log export" }
+      ] }
+    ]
+  } }
+\`\`\`
+2–4 columns.
+
+## calculator
+\`\`\`json
+{ "payload": {
+    "title": "Tip calculator",
+    "inputs": [
+      { "id": "bill",   "label": "Bill",   "type": "number", "default": 100,  "unit": "USD" },
+      { "id": "people", "label": "People", "type": "number", "default": 4 },
+      { "id": "tip",    "label": "Tip %",  "type": "slider", "default": 18, "min": 0, "max": 30, "step": 1 }
+    ],
+    "outputs": [
+      { "id": "perPerson", "label": "Per person", "formula": "(bill * (1 + tip/100)) / people", "unit": "USD", "precision": 2 }
+    ]
+  } }
+\`\`\`
+Formulas can use Math.* and any input id as a variable. The renderer sandboxes evaluation.
+
+## quiz
+\`\`\`json
+{ "payload": {
+    "title": "HTTP status codes",
+    "questions": [
+      { "id": "q1", "prompt": "Which means 'not found'?",
+        "options": [{"id":"a","label":"200"},{"id":"b","label":"301"},{"id":"c","label":"404"},{"id":"d","label":"500"}],
+        "correctId": "c",
+        "explanation": "404 = Not Found." }
+    ]
+  } }
+\`\`\`
+2–5 questions. correctId must match an option id.
 
 ## timeline
 \`\`\`json
@@ -208,26 +346,6 @@ tone ∈ "success" | "warn" | "error" | "info".
   } }
 \`\`\`
 3–8 events, in chronological order. \`date\` is a free-form string the renderer doesn't parse — model owns the format ("Q1 2024", "Mar 15", "2024"). tone="accent" highlights the row.
-
-## kanban
-\`\`\`json
-{ "payload": {
-    "title": "Sprint 24",
-    "columns": [
-      { "id": "todo",  "title": "To Do", "cards": [
-        { "id": "k1", "title": "Wire OAuth refresh tokens", "tags": ["auth"] },
-        { "id": "k2", "title": "Update onboarding copy" }
-      ] },
-      { "id": "doing", "title": "Doing", "cards": [
-        { "id": "k3", "title": "Reduce p99 latency on /search", "assignee": "lana", "tags": ["perf"] }
-      ] },
-      { "id": "done",  "title": "Done", "cards": [
-        { "id": "k4", "title": "Ship audit log export", "tags": ["enterprise"] }
-      ] }
-    ]
-  } }
-\`\`\`
-3 or 4 columns. Each card needs a title; body/tags/assignee are optional.
 
 ## pricing_table
 \`\`\`json
@@ -282,15 +400,22 @@ Clicking sends the action's \`prompt\` as the next user turn.
 - Items to check off → \`checklist\`
 - Citations / research → \`source_cards\`
 - Tabular comparison → \`table\`
-- Numeric trend → \`chart\`
+- Numeric trend over time → \`chart\`
+- Composition / breakdown of a whole → \`pie_chart\`
+- Density grid (day × hour, etc.) → \`heatmap\`
 - Code snippet → \`code_block\`
 - Status notice → \`inline_banner\`
-- Process flow with branches / decision diamonds → \`flowchart\`
-- Single-point-in-time metrics (3–6 big numbers) → \`kpi_tiles\`
-- Chronological events with dates → \`timeline\`
-- Multi-state task board (To Do / Doing / Done) → \`kanban\`
-- Tiered SaaS / subscription pricing → \`pricing_table\`
-- None of the above (open / conversational) → \`chips\` only
+- Process flow with branches → \`flowchart\`
+- Overlapping categories (2-3 sets) → \`venn_diagram\`
+- Brainstorm / topic exploration → \`mind_map\`
+- Single-point metrics → \`kpi_dashboard\`
+- One person snapshot → \`profile_card\`
+- Multi-state task board → \`kanban_board\`
+- Tiered subscription pricing → \`pricing_table\`
+- Live-recompute calculator → \`calculator\`
+- Multi-question Q&A → \`quiz\`
+- Chronological events → \`timeline\`
+- None of the above → \`chips\` (fallback)
 
 # Example reply (chart intent)
 

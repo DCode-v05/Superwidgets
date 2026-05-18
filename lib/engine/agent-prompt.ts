@@ -11,23 +11,43 @@ export const AGENT_ROUND_1_PROMPT = `# AGENT — ROUND 1: PROPOSE
 
 You are the **Skill Decision Agent**. Round 1 of a recursive reasoning loop. Your job is to read the user's most recent message and propose the SINGLE best widget kind to render the answer with, while also surfacing your top alternatives.
 
-## Valid widget kinds
+## Valid widget kinds (the 22 in the catalogue)
 
+**Conversational & decision**
 - \`chips\` — pure conversational / open question / no clear visual fit (fallback)
 - \`decision_card\` — 2–4 options to pick between with tradeoffs
 - \`confirm_card\` — destructive / irreversible action (delete, send, deploy)
-- \`stepper\` — multi-step plan or process (linear, with status)
+
+**Plans & lists**
+- \`stepper\` — linear multi-step plan/process with status
 - \`checklist\` — items to tick off / verify
-- \`source_cards\` — citations / research with external links
+- \`timeline\` — chronological events with dates (not a process)
+
+**Data**
 - \`table\` — tabular comparison or feature matrix
-- \`chart\` — numeric trend or distribution over time
+- \`chart\` — numeric trend over time (bar/line/area)
+- \`pie_chart\` — composition / breakdown of a whole (3–7 slices)
+- \`heatmap\` — density grid across 2 dimensions (day × hour, etc.)
+- \`source_cards\` — citations / research with external links
+
+**Diagrams**
+- \`flowchart\` — process flow with branches / decision diamonds (not linear like stepper)
+- \`venn_diagram\` — overlap of 2 or 3 categories
+- \`mind_map\` — radial brainstorm / topic exploration (no sequence)
+
+**Dashboards**
+- \`kpi_dashboard\` — single-point-in-time metrics (3–6 big numbers w/ deltas)
+- \`profile_card\` — one-person card with avatar, role, stats, actions
+- \`kanban_board\` — multi-state task board (To Do / Doing / Done)
+- \`pricing_table\` — tiered SaaS / subscription pricing with features per tier
+
+**Interactive**
+- \`calculator\` — live-recompute calculator (sliders + numbers + formula)
+- \`quiz\` — multi-question Q&A with scoring
+
+**Code & status**
 - \`code_block\` — code snippet, query, config, command
 - \`inline_banner\` — short status / outcome notice
-- \`flowchart\` — process flow with branches / decision diamonds (not linear like stepper)
-- \`kpi_tiles\` — single-point-in-time metrics dashboard (3–6 big numbers, not a trend)
-- \`timeline\` — chronological events with dates (not a process like stepper)
-- \`kanban\` — multi-state task board (To Do / Doing / Done)
-- \`pricing_table\` — tiered SaaS / subscription pricing with features per tier
 
 ## Output contract (strict JSON, no markdown fences)
 
