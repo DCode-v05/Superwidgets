@@ -1,6 +1,6 @@
 ---
 name: architecture-html-subagent
-description: Mini-bap is an HTML-widget subagent. Agentic 2-tool loop (build_widget, submit_widget) across 7 models, 22 widget skills. Script + form allowed for interactive widgets.
+description: Mini-bap is an HTML-widget subagent. Agentic 2-tool loop (build_widget, submit_widget) across 7 models, 30 widget skills. Script + form allowed for interactive widgets.
 metadata:
   type: project
 ---
@@ -20,17 +20,17 @@ Two tools, one phase each:
 
 `MAX_ITERATIONS = 8` in [[lib/engine/run-engine.ts]] is the safety cap.
 
-## Widget catalog (22 skills)
+## Widget catalog (30 skills)
 
 [[lib/engine/tools/widget-library.ts]]
 
 | Family | Skills |
 |---|---|
 | Static | chips · decision_card · confirm_card · stepper · checklist · timeline · table · chart · source_cards · code_block · inline_banner |
-| Diagrams | flowchart · venn_diagram · mind_map |
-| Charts | pie_chart · heatmap |
+| Diagrams | flowchart · venn_diagram · mind_map · sequence_diagram · tree_diagram · gantt_chart · map |
+| Charts | pie_chart · heatmap · scatter_plot · funnel_chart · radar_chart |
 | Dashboards | kpi_dashboard · profile_card · kanban_board · pricing_table |
-| Interactive (script ± form) | calculator · quiz |
+| Interactive (script ± form) | calculator · quiz · form |
 
 ## Providers ([[lib/engine/providers/]])
 
@@ -64,7 +64,11 @@ Sanitizer-equivalent checks:
 
 ## Interactivity convention
 
-Any element with `data-bap-prompt="follow-up message"` becomes a click target. The global click delegator in [[components/chat/ChatShell.tsx]] uses `target.closest("[data-bap-prompt]")` so all element types work — chip buttons, inline span keywords, whole-card click targets. For destructive actions, also add `data-bap-confirm`.
+**Every widget has a click target** (validator-enforced). Default: `data-bap-prompt="follow-up message"` on the natural per-item element — table rows, KPI tiles, kanban cards, timeline events, heatmap cells, SVG bars / pie slices / venn regions / flowchart nodes / mind-map branches, stepper steps, checklist items, profile-card CTA, calculator "Explain" pill, quiz "Review answers" chip (rendered post-submit by the script). The global click delegator in [[components/chat/ChatShell.tsx]] uses `target.closest("[data-bap-prompt]")` so any element type works.
+
+**Exception:** `source_cards` uses `<a href="..." target="_blank" rel="noopener">` to open the external citation in a new tab instead of firing a follow-up.
+
+For destructive actions, also add `data-bap-confirm` — the host gates with `window.confirm()` before sending. `code_block` carries a small in-widget `<script>` for clipboard copy (not in the interactive family because it has no live state).
 
 ## SSE event schema
 

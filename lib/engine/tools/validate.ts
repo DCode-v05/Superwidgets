@@ -21,7 +21,7 @@ const FORM_METHOD_RE = /<form\b[^>]*\smethod\s*=/i;
 const NETWORK_RE = /\b(fetch|XMLHttpRequest|navigator\.sendBeacon|new\s+EventSource|new\s+WebSocket)\s*\(/;
 const DYNAMIC_CODE_RE = /\b(eval|new\s+Function|document\.write|setTimeout\s*\(\s*['"`]|setInterval\s*\(\s*['"`])/;
 
-const MAX_WIDGET_BYTES = 12_000;
+const MAX_WIDGET_BYTES = 20_000;
 
 export function validateWidget(html: string): ValidationResult {
   const issues: string[] = [];
@@ -79,17 +79,35 @@ export function validateWidget(html: string): ValidationResult {
     issues.push(`Widget HTML is ${inner.length} bytes (max ${MAX_WIDGET_BYTES}). Trim styles or content.`);
   }
 
+  const hasClickTarget =
+    /\bdata-bap-prompt\s*=/i.test(inner) ||
+    /<a\s[^>]*\bhref\s*=[^>]*\btarget\s*=\s*["']_blank/i.test(inner);
+  if (!hasClickTarget) {
+    issues.push(
+      `Widget has no click target. Every widget MUST have at least one ` +
+        `\`data-bap-prompt="..."\` element (button / row / card / SVG node / table cell) ` +
+        `for follow-up, OR — only for source_cards — an \`<a href target="_blank">\` link.`,
+    );
+  }
+
   // Tag balance: void/SVG-leaf elements may omit closes; non-void must match.
+  // Script bodies are stripped first — strings like 'o.innerHTML="<div>x</div>"'
+  // generate DOM at runtime, not at parse time, so they shouldn't be counted.
+  // Regex allows `>` inside quoted attribute values.
   const VOID_OR_LEAF = new Set([
     "area", "base", "br", "col", "embed", "hr", "img", "input", "link",
     "meta", "source", "track", "wbr",
     "circle", "ellipse", "rect", "line", "polyline", "polygon", "path",
     "stop", "use", "image",
   ]);
-  const tagRe = /<(\/?)(\w+)(?:\s[^>]*?)?(\s*\/)?>/gi;
+  const innerForBalance = inner.replace(
+    /<script\b[^>]*>[\s\S]*?<\/script>/gi,
+    "",
+  );
+  const tagRe = /<(\/?)(\w+)(?:\s+(?:[^"'>]|"[^"]*"|'[^']*')*)?(\s*\/)?>/gi;
   const openCounts = new Map<string, number>();
   const closeCounts = new Map<string, number>();
-  for (const m of inner.matchAll(tagRe)) {
+  for (const m of innerForBalance.matchAll(tagRe)) {
     const isClose = m[1] === "/";
     const name = m[2].toLowerCase();
     const isSelfClose = !!m[3];
@@ -113,10 +131,12 @@ export function validateWidget(html: string): ValidationResult {
     }
   }
   if (balanceIssues.length > 0) {
+    const tail = innerForBalance.slice(-260).replace(/\s+/g, " ").trim();
     issues.push(
       `Tag balance off — ` + balanceIssues.slice(0, 4).join("; ") +
         (balanceIssues.length > 4 ? `; …(+${balanceIssues.length - 4} more)` : "") +
-        `. Close every non-void tag exactly once.`,
+        `. Close every non-void tag exactly once. ` +
+        `Last 260 chars of widget (look here for missing close): "…${tail}"`,
     );
   }
 

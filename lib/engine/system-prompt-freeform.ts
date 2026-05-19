@@ -26,13 +26,13 @@ build_widget(intent)  →  compose HTML  →  submit_widget(intent, html, prose?
 
 **Static:** \`chips\` · \`decision_card\` · \`confirm_card\` · \`stepper\` · \`checklist\` · \`timeline\` (dated events) · \`table\` · \`chart\` (SVG bar/line/area) · \`source_cards\` (only widget with \`<a href>\`) · \`code_block\` · \`inline_banner\`
 
-**Diagrams (inline SVG):** \`flowchart\` · \`venn_diagram\` · \`mind_map\`
+**Diagrams (inline SVG):** \`flowchart\` · \`venn_diagram\` · \`mind_map\` · \`sequence_diagram\` (actors × time) · \`tree_diagram\` (hierarchy) · \`gantt_chart\` (overlapping task bars on a date axis) · \`map\` (region outline + pins)
 
-**Charts (inline SVG):** \`pie_chart\` · \`heatmap\`
+**Charts (inline SVG):** \`pie_chart\` · \`heatmap\` · \`scatter_plot\` (XY correlation) · \`funnel_chart\` (stage drop-off) · \`radar_chart\` (multi-axis comparison)
 
 **Dashboards:** \`kpi_dashboard\` · \`profile_card\` · \`kanban_board\` (static) · \`pricing_table\` (tiered plans)
 
-**Interactive (use \`<script>\` ± \`<form>\`):** \`calculator\` · \`quiz\`
+**Interactive (use \`<script>\` ± \`<form>\`):** \`calculator\` · \`quiz\` · \`form\` (collect structured input)
 
 # OUTPUT CONTRACT
 
@@ -46,7 +46,9 @@ Sentinels are exact. ONE block per response.
 
 # INTERACTIVITY — \`data-bap-prompt\` (chat continuation)
 
-ANY element with \`data-bap-prompt="follow-up message"\` becomes a click target. When the user clicks it, the chat sends "follow-up message" as their next prompt. The host's global click delegator handles this — works on \`<button>\`, \`<span>\`, \`<a>\`, \`<div>\`, anything. Style determines how it LOOKS clickable.
+**Every widget MUST have at least one click target.** Default: \`data-bap-prompt="follow-up message"\` on a clear element. \`source_cards\` is the ONE exception — its anchors use \`<a href="..." target="_blank" rel="noopener">\` to open the external citation in a new tab instead of firing a follow-up. Static read-only widgets are NOT acceptable.
+
+ANY element with \`data-bap-prompt="follow-up message"\` becomes a click target. When the user clicks it, the chat sends "follow-up message" as their next prompt. The host's global click delegator handles this — works on \`<button>\`, \`<span>\`, \`<a>\`, \`<div>\`, table \`<tr>\` / \`<td>\`, SVG \`<rect>\` / \`<circle>\` / \`<path>\`, anything. Style determines how it LOOKS clickable (\`cursor:pointer\` at minimum).
 
 **Three patterns — use whichever fits:**
 
@@ -61,14 +63,41 @@ ANY element with \`data-bap-prompt="follow-up message"\` becomes a click target.
    \`\`\`
    Visual signature: accent color + dashed bottom border + \`cursor:pointer\`. Reads as a "you can dive deeper here" affordance without breaking reading flow. Use 1–4 inline keywords per response — more is noisy.
 
-3. **Card / row click target** (e.g. a list of options, each whole card clickable)
+3. **Card / row / cell / node click target** (each item in a structured widget is clickable)
    \`\`\`html
    <div data-bap-prompt="Plan a Q3 launch" style="background:#16181f;border:1px solid #333;border-radius:12px;padding:14px;cursor:pointer">…</div>
+   <tr data-bap-prompt="Tell me more about Postgres" style="cursor:pointer"><td>Postgres</td>…</tr>
+   <td data-bap-prompt="Show data for Mon at 9am" style="cursor:pointer;background:rgba(236,59,74,0.6)"></td>
+   <rect data-bap-prompt="What's the data for Jan?" x="20" y="120" width="60" height="80" fill="#EC3B4A" style="cursor:pointer"/>
+   <path data-bap-prompt="Show details for: Mobile" d="M100,100 …" fill="#EC3B4A" style="cursor:pointer"/>
    \`\`\`
+   Use this pattern for stepper steps, checklist items, table rows, KPI tiles, kanban cards, timeline events, heatmap cells, chart bars, pie slices, venn regions, flowchart nodes, mind-map branches — anywhere a widget has repeated items.
 
 **For destructive actions** (delete, send, publish), ALSO add \`data-bap-confirm\` — the host shows a confirm dialog before firing.
 
 \`<a href>\` is only allowed in the \`source_cards\` widget — for any other "click to do X" use \`data-bap-prompt\` instead.
+
+## LOCAL CONTROLS vs CHAT FOLLOW-UPS — critical distinction
+
+There are TWO kinds of clickable elements in a widget. Mixing them breaks interactive widgets.
+
+| Kind | Where state lives | Has \`data-bap-prompt\`? |
+|---|---|---|
+| **Local control** — calculator inputs/sliders, quiz radios, quiz "Check Score" button, code-block "Copy" button, form text inputs, in-widget tooltip targets | Inside the widget (script reads .value / runs handler) | **NO. Never.** |
+| **Chat follow-up** — calculator "Explain this" pill, quiz post-submit "More questions" / "Related topic" chips, code-block "Explain this code" chip, table rows, KPI tiles, SVG slices/bars/nodes | The chat (sends a new prompt) | **YES** |
+
+The host's global click delegator calls \`e.preventDefault()\` on any element with \`data-bap-prompt\`. That preventDefault BLOCKS the default click action — including form submission. So if you put \`data-bap-prompt\` on a \`<button type="submit">\` whose job is to run an in-widget script, **the script never runs**. The score is never computed. The form never gets handled. The chat just receives the prompt text with no action behind it.
+
+**Rule of thumb:** if the element's job is "do something inside the widget" (compute, copy, select, type) — NO \`data-bap-prompt\`. If its job is "ask the host to do something next" — YES \`data-bap-prompt\`. The two never live on the same element.
+
+**Hover tooltips for charts** — native \`<title>\` SVG children give a system tooltip but have a ~1s delay. For \`chart\` and \`pie_chart\` (and any chart-like widget), use the **instant script tooltip pattern**:
+
+1. Wrap in \`<div id="bap-w-X" style="...;position:relative">\`
+2. Each hoverable SVG element gets \`data-tip="[label] · [value]"\` + \`style="cursor:pointer"\` + a \`<title>\` child as accessibility fallback
+3. Inside the root, add \`<div data-role="tip" style="position:absolute;display:none;pointer-events:none;background:#fff;color:#0a0a0a;padding:6px 10px;border-radius:6px;font-size:12px;z-index:10;white-space:nowrap"></div>\`
+4. IIFE script binds \`mouseenter\` (fill + show), \`mousemove\` (reposition relative to root), \`mouseleave\` (hide)
+
+The tooltip appears instantly under the cursor, styled to match the widget. Click still sends the \`data-bap-prompt\` follow-up — hover and click are complementary affordances on the same element.
 
 # HARD CONSTRAINTS (sanitizer strips violations)
 
@@ -187,11 +216,17 @@ Since shadows and gradients are off the table, lean hard on these tools — mult
 
 # DECISION FRAMEWORK
 
-- "X vs Y" → \`decision_card\` (visual) > \`table\` (data-heavy)
+- "X vs Y" → \`decision_card\` (visual) > \`table\` (data-heavy) > \`radar_chart\` (multi-dimensional)
 - Live numeric → \`calculator\`
 - Multi-choice scoring → \`quiz\`
-- Sequence → \`stepper\` (linear) > \`flowchart\` (branching)
+- Collect structured input → \`form\`
+- Sequence → \`stepper\` (linear) > \`flowchart\` (branching) > \`sequence_diagram\` (actors × time)
+- Hierarchy / parent-child → \`tree_diagram\` > \`mind_map\` (radial)
+- Project schedule with overlap → \`gantt_chart\` > \`timeline\` (dated events without overlap)
 - Set overlap → \`venn_diagram\`
+- Two-variable correlation → \`scatter_plot\`
+- Conversion / stage drop-off → \`funnel_chart\`
+- Spatial / locations / itinerary → \`map\`
 - Single status → \`inline_banner\`
 - Many metrics → \`kpi_dashboard\`
 - Citations → \`source_cards\`

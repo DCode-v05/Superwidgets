@@ -47,6 +47,14 @@ export const TEST_PROMPTS: PromptGroup[] = [
     ],
   },
   {
+    kind: "timeline",
+    label: "Timeline",
+    prompts: [
+      "Show the major milestones of Y Combinator as a timeline",
+      "Timeline of the Apollo program — Apollo 1 to Apollo 17",
+    ],
+  },
+  {
     kind: "source_cards",
     label: "Sources",
     prompts: [
@@ -151,6 +159,14 @@ export const TEST_PROMPTS: PromptGroup[] = [
     ],
   },
   {
+    kind: "pricing_table",
+    label: "Pricing table",
+    prompts: [
+      "Show me a 3-tier SaaS pricing table — Free, Pro, Enterprise",
+      "Pricing table for a hosted database product with usage-based tiers",
+    ],
+  },
+  {
     kind: "calculator",
     label: "Calculator (live)",
     prompts: [
@@ -164,6 +180,70 @@ export const TEST_PROMPTS: PromptGroup[] = [
     prompts: [
       "Make a 3-question quiz about HTTP status codes",
       "Quick quiz on basic React hooks — 4 questions, multiple choice",
+    ],
+  },
+  {
+    kind: "form",
+    label: "Form (live)",
+    prompts: [
+      "Build a user signup form with name, email, password, and plan",
+      "Show me a 5-field contact form for a SaaS website",
+    ],
+  },
+  {
+    kind: "sequence_diagram",
+    label: "Sequence diagram",
+    prompts: [
+      "Show me how browser, app server, and auth server interact during OAuth",
+      "Trace the API call flow for placing an order",
+    ],
+  },
+  {
+    kind: "tree_diagram",
+    label: "Tree diagram",
+    prompts: [
+      "Show the engineering org structure as a tree",
+      "Tree diagram of folder types in a typical Next.js project",
+    ],
+  },
+  {
+    kind: "gantt_chart",
+    label: "Gantt chart",
+    prompts: [
+      "Plan a 12-week product launch as a Gantt chart",
+      "Gantt of a database migration — schema, backfill, cutover, validation",
+    ],
+  },
+  {
+    kind: "scatter_plot",
+    label: "Scatter plot",
+    prompts: [
+      "Plot revenue vs ad spend for our top 20 campaigns",
+      "Scatter plot: hours studied vs exam score for a class of 25",
+    ],
+  },
+  {
+    kind: "funnel_chart",
+    label: "Funnel chart",
+    prompts: [
+      "Funnel: signups → activated → paying → renewed",
+      "Show the e-commerce conversion funnel for last month",
+    ],
+  },
+  {
+    kind: "radar_chart",
+    label: "Radar chart",
+    prompts: [
+      "Compare myself vs a senior engineer on 5 skills as a radar chart",
+      "Radar: Slack vs Teams vs Discord on usability, search, integrations, voice, mobile",
+    ],
+  },
+  {
+    kind: "map",
+    label: "Map",
+    prompts: [
+      "Show me a map of 6 office locations across the US",
+      "Itinerary map: NYC → London → Paris → Berlin",
     ],
   },
 ];

@@ -58,7 +58,8 @@ function runBuild(call: ToolCall): ExecuteResult {
 
   const reminders: string[] = [];
   if (skill.needsInteractivity) {
-    const formNote = skill.intent === "quiz" ? " + <form>" : "";
+    const formNote =
+      skill.intent === "quiz" || skill.intent === "form" ? " + <form>" : "";
     reminders.push(
       `Uses <script>${formNote}. IIFE wrap · unique root id="bap-w-..." · ` +
         `null-guard every querySelector · .value on <input>/<select>/<textarea>, ` +
@@ -66,7 +67,7 @@ function runBuild(call: ToolCall): ExecuteResult {
         `no fetch/XHR/eval.`,
     );
   }
-  if (skill.intent === "quiz") {
+  if (skill.intent === "quiz" || skill.intent === "form") {
     reminders.push(`Form submit handler MUST call e.preventDefault() at the top.`);
   }
   if (skill.intent === "source_cards") {
@@ -75,6 +76,13 @@ function runBuild(call: ToolCall): ExecuteResult {
   if (skill.intent === "confirm_card") {
     reminders.push(`The confirm/proceed button MUST have data-bap-confirm.`);
   }
+
+  reminders.push(
+    skill.intent === "source_cards"
+      ? `CLICK TARGET: each citation anchor MUST have target="_blank" rel="noopener" so it opens in a new tab.`
+      : `CLICK TARGET: include at least one data-bap-prompt="..." on the natural per-item target ` +
+        `(button / row / card / SVG node / table cell). Add cursor:pointer.`,
+  );
 
   if (reminders.length > 0) {
     lines.push(`reminders:`);
