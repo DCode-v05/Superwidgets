@@ -26,8 +26,14 @@ const FORM_METHOD_RE = /<form\b[^>]*\smethod\s*=/i;
 const NETWORK_RE = /\b(fetch|XMLHttpRequest|navigator\.sendBeacon|new\s+EventSource|new\s+WebSocket)\s*\(/;
 const DYNAMIC_CODE_RE = /\b(eval|new\s+Function|document\.write|setTimeout\s*\(\s*['"`]|setInterval\s*\(\s*['"`])/;
 
-/** Max bytes for one widget block. ~6KB covers any well-designed widget. */
-const MAX_WIDGET_BYTES = 6_000;
+/**
+ * Max bytes for one widget block. 12KB allows the editorial-quality density
+ * the system prompt pushes for (multiple sections, layered typography, 3-6
+ * inline SVG icons, footer micro-copy, etc.) while still capping runaway
+ * widgets. A "considered" widget typically lands at 2-6KB; this leaves
+ * generous headroom for kpi_dashboards and pricing_tables with many tiles.
+ */
+const MAX_WIDGET_BYTES = 12_000;
 
 export function validateWidget(html: string): ValidationResult {
   const issues: string[] = [];
@@ -93,37 +99,59 @@ export function validateWidget(html: string): ValidationResult {
     issues.push(`Widget HTML is ${inner.length} bytes (max ${MAX_WIDGET_BYTES}). Trim styles or content.`);
   }
 
-  // 9. Tag balance — opens that need closes vs actual closes.
-  // CORRECTLY accounts for:
-  //   - HTML void elements (input, br, img, hr, …) — no close needed
-  //   - SVG leaf elements (circle, rect, path, …) — typically self-closed
-  //     in inline SVG; HTML parser tolerates either form
-  //   - explicitly self-closed tags (`<foo />`)
-  // Previous version counted <input> as an open with no matching close,
-  // false-flagging every calculator/quiz widget.
-  const VOID_OR_LEAF =
-    "area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr|" +
-    "circle|ellipse|rect|line|polyline|polygon|path|stop|use|image";
-  const tagRe = new RegExp(`<(\\/?)(\\w+)(?:\\s[^>]*?)?(\\s*\\/)?>`, "gi");
-  let needClose = 0;
-  let closes = 0;
-  let openTotal = 0;
-  const voidRe = new RegExp(`^(?:${VOID_OR_LEAF})$`, "i");
+  // 9. Tag balance — per-tag-name counting.
+  // HTML void elements (input, br, img, hr, …) need no close tag, but it's
+  // legal to write one explicitly (e.g. <path></path> in SVG). SVG leaf
+  // elements (circle, rect, path, …) are typically self-closed in inline
+  // SVG but the HTML parser accepts either form. So:
+  //   - For void/leaf elements: closes are OPTIONAL, but if present, they
+  //     should not EXCEED opens (a stray </path> with no opener is broken).
+  //   - For all other elements: opens (excluding self-closed) must equal closes.
+  // A previous version counted total opens vs total closes globally, which
+  // false-flagged widgets that explicitly closed SVG paths (style="<path>…
+  // </path>") — common in the editorial-quality density the prompt pushes.
+  const VOID_OR_LEAF = new Set([
+    "area", "base", "br", "col", "embed", "hr", "img", "input", "link",
+    "meta", "source", "track", "wbr",
+    "circle", "ellipse", "rect", "line", "polyline", "polygon", "path",
+    "stop", "use", "image",
+  ]);
+  const tagRe = /<(\/?)(\w+)(?:\s[^>]*?)?(\s*\/)?>/gi;
+  const openCounts = new Map<string, number>();
+  const closeCounts = new Map<string, number>();
   for (const m of inner.matchAll(tagRe)) {
     const isClose = m[1] === "/";
-    const name = m[2];
+    const name = m[2].toLowerCase();
     const isSelfClose = !!m[3];
     if (isClose) {
-      closes++;
-    } else {
-      openTotal++;
-      if (!voidRe.test(name) && !isSelfClose) needClose++;
+      closeCounts.set(name, (closeCounts.get(name) ?? 0) + 1);
+    } else if (!isSelfClose) {
+      openCounts.set(name, (openCounts.get(name) ?? 0) + 1);
     }
   }
-  const drift = Math.abs(needClose - closes);
-  if (drift > Math.max(1, Math.floor(openTotal * 0.05))) {
+  const balanceIssues: string[] = [];
+  // Per-tag check: walk every name that appears as either open or close
+  const allNames = new Set([...openCounts.keys(), ...closeCounts.keys()]);
+  for (const name of allNames) {
+    const opens = openCounts.get(name) ?? 0;
+    const closes = closeCounts.get(name) ?? 0;
+    if (VOID_OR_LEAF.has(name)) {
+      // Void/leaf: any open count is fine; closes are optional but must not exceed opens
+      if (closes > opens) {
+        balanceIssues.push(`<${name}>: ${closes} </${name}> with only ${opens} <${name}> open(s)`);
+      }
+    } else {
+      // Non-void: opens must equal closes
+      if (opens !== closes) {
+        balanceIssues.push(`<${name}>: ${opens} open vs ${closes} close`);
+      }
+    }
+  }
+  if (balanceIssues.length > 0) {
     issues.push(
-      `Tag balance off — ${needClose} non-void opens need a close, found ${closes} close tag(s). Close every non-void tag.`,
+      `Tag balance off — ` + balanceIssues.slice(0, 4).join("; ") +
+        (balanceIssues.length > 4 ? `; …(+${balanceIssues.length - 4} more)` : "") +
+        `. Close every non-void tag exactly once.`,
     );
   }
 

@@ -43,8 +43,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       "PHASE 2 — Submit a widget. Validates intent + HTML structure + " +
       "script safety in one pass. If valid → renders + ENDS the loop " +
       "(terminal). If invalid → returns {valid:false, issues}, agent " +
-      "loops back with fixed HTML in the next call. Keep widget HTML " +
-      "compact (target 800–2000 bytes) — every byte is output tokens.",
+      "loops back with fixed HTML in the next call.",
     input_schema: {
       type: "object",
       properties: {
@@ -57,9 +56,10 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
           type: "string",
           description:
             "Full widget HTML INCLUDING <!--bap-widget:start--> and " +
-            "<!--bap-widget:end--> sentinel comments. Write COMPACTLY — " +
-            "inline-style shorthand, no decorative whitespace, minimal " +
-            "wrapper divs.",
+            "<!--bap-widget:end--> sentinel comments. Build a complete, " +
+            "considered widget with rich hierarchy, multiple sections, " +
+            "and the structural / typographic tools the system prompt " +
+            "describes. Use CSS shorthand for code-side neatness.",
         },
         prose: {
           type: "string",
