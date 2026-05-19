@@ -10,18 +10,6 @@ interface AgentTraceProps {
   isStreaming?: boolean;
 }
 
-/**
- * Collapsible trace of the agent's tool-use loop.
- *
- * Each row = one tool call + its result, grouped by iteration. Mirrors
- * engine-peripherals' working_memory_log shape — typed entries per
- * iteration that show what the agent did and what came back.
- *
- * The 3 tools are colored/iconed by phase:
- *   - lookup_example  → search icon (GATHER)
- *   - validate_widget → shield icon (VERIFY)
- *   - render_widget   → send icon (SUBMIT — terminal)
- */
 export function AgentTrace({ steps, isStreaming }: AgentTraceProps) {
   const [open, setOpen] = useState(false);
 

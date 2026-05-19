@@ -2,16 +2,9 @@ export interface TestPrompt {
   id: string;
   text: string;
   expectedKind: string;
-  /** Which interactivity check applies. */
   requiresInteractivity: boolean;
 }
 
-/**
- * Three prompts chosen to stress different model capabilities:
- * 1. decision — reasoning + tabular structure + recommendation
- * 2. stepper — sequential hierarchy + design polish
- * 3. chart — inline SVG math (hardest test; cheap models break here)
- */
 export const PROMPTS: TestPrompt[] = [
   {
     id: "decision",

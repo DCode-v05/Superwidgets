@@ -2,12 +2,6 @@ import type { ToolCall, ToolResult } from "./types";
 import { listIntents, getSkill } from "./widget-library";
 import { validateWidget } from "./validate";
 
-/**
- * Two-tool dispatch:
- *   - build_widget : intent → design note + reminders (no HTML, cheap)
- *   - submit_widget: intent + html → validate + render (terminal if valid)
- */
-
 export interface FinalRender {
   html: string;
   prose: string | null;
@@ -15,7 +9,6 @@ export interface FinalRender {
 
 export interface ExecuteResult {
   result: ToolResult;
-  /** Only set when submit_widget validated — signals the loop to terminate. */
   finalRender?: FinalRender;
 }
 
@@ -42,8 +35,6 @@ export function executeTool(call: ToolCall): ExecuteResult {
 
 const SENTINEL_START = "<!--bap-widget:start-->";
 const SENTINEL_END = "<!--bap-widget:end-->";
-
-// === Phase 1: build_widget — design hints for the chosen intent ===
 
 function runBuild(call: ToolCall): ExecuteResult {
   const intent = String(call.input.intent ?? "").trim();
@@ -95,8 +86,6 @@ function runBuild(call: ToolCall): ExecuteResult {
     result: { toolCallId: call.id, name: call.name, content: lines.join("\n"), isError: false },
   };
 }
-
-// === Phase 2: submit_widget — validate + render ===
 
 function runSubmit(call: ToolCall): ExecuteResult {
   const intent = String(call.input.intent ?? "").trim();
@@ -188,7 +177,7 @@ function rejectResult(
     toolCallId: call.id,
     name: call.name,
     content: lines.join("\n"),
-    isError: false, // not an error — just feedback; agent loops back
+    isError: false,
   };
 }
 

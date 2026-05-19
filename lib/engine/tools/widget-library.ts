@@ -1,28 +1,12 @@
-/**
- * The widget skill catalog.
- *
- * Each widget intent is treated as an individual SKILL belonging to the
- * mini-bap agent — analogous to entries in engine-peripherals'
- * utility_directory user_skills table. The classify → choose flow picks
- * one skill per turn based on the user's prompt.
- *
- * `keywords` and `needsInteractivity` drive the classifier's suggestion
- * list. `designNote` is what the agent reads after choosing.
- */
+/** The widget skill catalog. 22 skills the agent picks from per turn. */
 
 export interface WidgetSkill {
   intent: string;
-  /** One-line description of when this skill applies. */
   appliesWhen: string;
-  /** Lowercase keyword set the classifier matches against the prompt. */
   keywords: string[];
-  /** True if this widget needs <script> or <form> to be useful. */
   needsInteractivity: boolean;
-  /** Family bucket — used for the system prompt's intent table grouping. */
   family: "static" | "diagram" | "chart" | "dashboard" | "interactive";
-  /** Design note the agent reads in the CHOOSE phase. */
   designNote: string;
-  /** Reference HTML — short, varied. NOT a template to copy. */
   html: string;
 }
 
@@ -372,7 +356,3 @@ export function listSkills(): WidgetSkill[] {
 export function listIntents(): string[] {
   return [...WIDGET_INTENTS];
 }
-
-// Back-compat alias for older callers / tests
-export const getExample = getSkill;
-export type WidgetExample = WidgetSkill;

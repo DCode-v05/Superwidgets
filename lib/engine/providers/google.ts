@@ -12,13 +12,8 @@ import type {
 } from "../tools/types";
 
 /**
- * Google Gemini agentic-turn invoker.
- *
- * Gemini streams function calls as ONE complete object (no incremental
- * argument deltas), simplifying accumulation.
- *
- * Gemini doesn't issue stable tool-call ids — we synthesize ids of the form
- * `gem_<turn>_<name>` so run-engine can treat all providers uniformly.
+ * Google Gemini agent turn. Gemini doesn't issue stable tool-call ids,
+ * so we synthesize them so run-engine can correlate calls and results.
  */
 let synthIdCounter = 0;
 function synthId(name: string): string {

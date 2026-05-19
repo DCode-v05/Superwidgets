@@ -13,23 +13,12 @@ interface PromptLibraryProps {
   disabled?: boolean;
 }
 
-/**
- * Trigger button + slide-out drawer holding every demo prompt grouped by intent.
- *
- * Available everywhere — empty state and mid-conversation. Click a prompt to
- * submit it as the next user message; the drawer closes automatically.
- *
- * Open state is controlled by the parent so other components (e.g. EmptyState)
- * can trigger the drawer. Uses `createPortal` to escape the header's
- * `backdrop-filter` containing block (same trick CostCalculator uses).
- */
 export function PromptLibrary({
   open,
   onOpenChange,
   onPick,
   disabled,
 }: PromptLibraryProps) {
-  // Close on Escape
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -39,7 +28,6 @@ export function PromptLibrary({
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onOpenChange]);
 
-  // Lock body scroll while drawer is open
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;

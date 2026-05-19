@@ -10,22 +10,10 @@ import type { AgentMessage, ToolDefinition } from "../tools/types";
 const MAX_OUTPUT_TOKENS = 16384;
 
 /**
- * OpenAI agentic-turn invoker — uses the Responses API (`/v1/responses`).
- *
- * Why Responses and not Chat Completions: GPT-5 family rejects
- * `reasoning_effort` + `tools` on `/v1/chat/completions` (returns 400
- * "Please use /v1/responses instead"). The Responses API is OpenAI's
- * recommended path for tool-using agents and lets us set
- * `reasoning.effort: "minimal"` — the cheapest tier, ideal for the
- * classify → choose → verify → submit loop where deep reasoning is
- * wasted on each small structured tool call.
- *
- * Streaming events handled:
- *   - response.output_item.added              (track new function_call items)
- *   - response.output_text.delta              (stream visible text)
- *   - response.function_call_arguments.delta  (accumulate tool arguments)
- *   - response.output_item.done               (emit completed tool_call)
- *   - response.completed                      (capture usage + stop reason)
+ * OpenAI agent turn via the Responses API (`/v1/responses`). GPT-5 family
+ * rejects `reasoning_effort` + `tools` on chat completions, so we use
+ * Responses with `reasoning.effort: "none"` — the cheapest tier, fine for
+ * our tool-dispatch loop.
  */
 export function createOpenAIAgent(model: string): AgentTurnInvoker {
   return (systemPrompt, messages, tools) => {
@@ -53,16 +41,13 @@ export function createOpenAIAgent(model: string): AgentTurnInvoker {
           instructions: systemPrompt,
           input,
           tools: apiTools,
-          // GPT-5 family accepts {none, low, medium, high, xhigh}. "none"
-          // disables reasoning entirely — ideal for our tool-dispatch loop
-          // (classify / choose / validate / render) which doesn't need it.
-          // SDK ^4.104 types only know low/medium/high so we cast.
+          // "none" disables reasoning entirely. SDK ^4.104 types only know
+          // low/medium/high, but the API accepts "none" — cast required.
           reasoning: { effort: "none" as "low" },
           max_output_tokens: MAX_OUTPUT_TOKENS,
           stream: true,
         });
 
-        // Accumulate streaming function-call arguments per output_index
         const fnCalls = new Map<
           number,
           { call_id: string; name: string; args: string }
@@ -77,8 +62,6 @@ export function createOpenAIAgent(model: string): AgentTurnInvoker {
         let stopReason: StopReason = "other";
 
         for await (const event of stream) {
-          // The SDK types stream events as a discriminated union via .type
-          // — we narrow with switch on the string literal.
           switch (event.type) {
             case "response.output_item.added": {
               const item = (event as { item?: { type?: string; call_id?: string; name?: string } }).item;
@@ -127,7 +110,6 @@ export function createOpenAIAgent(model: string): AgentTurnInvoker {
                   cacheWriteTokens: 0,
                 };
               }
-              // Determine stop reason from the final output array
               const hadToolCall = resp?.output?.some(
                 (it) => it?.type === "function_call",
               );
@@ -153,9 +135,6 @@ export function createOpenAIAgent(model: string): AgentTurnInvoker {
               }
               break;
             }
-            // Other events (response.created, response.in_progress,
-            // response.output_text.done, response.function_call_arguments.done,
-            // reasoning summary events, etc.) we don't need to act on.
             default:
               break;
           }
@@ -171,8 +150,6 @@ export function createOpenAIAgent(model: string): AgentTurnInvoker {
     return { stream: streamGen(), done: () => donePromise };
   };
 }
-
-// === Input/tool translation ===
 
 type ResponseFinal = {
   output?: Array<{ type?: string } | null>;
@@ -216,7 +193,6 @@ function toResponsesInput(messages: AgentMessage[]): InputItem[] {
         });
       }
     } else {
-      // role === "tool"
       for (const r of m.results) {
         items.push({
           type: "function_call_output",

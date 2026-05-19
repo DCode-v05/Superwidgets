@@ -1,9 +1,3 @@
-/**
- * Wrap raw widget HTML in a standalone HTML document so it can be opened
- * directly in a browser. Widget HTML is self-contained via inline styles,
- * so we only need a minimal scaffold + a body background that matches the
- * dark chat bubble (which the model designed against per the contrast rule).
- */
 export function wrapWidgetAsDocument(widgetHtml: string, title?: string): string {
   const safeTitle = (title ?? "Mini-BAP Widget").replace(/[<>&"']/g, "");
   return `<!DOCTYPE html>

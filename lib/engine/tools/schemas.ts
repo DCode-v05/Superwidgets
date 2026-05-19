@@ -1,21 +1,6 @@
 import type { ToolDefinition } from "./types";
 import { WIDGET_INTENTS } from "./widget-library";
 
-/**
- * Two tools, two phases:
- *
- *   PHASE 1: BUILD   →  build_widget(intent)            cheap pre-flight
- *   PHASE 2: SUBMIT  →  submit_widget(intent, html, …)  validates + renders (terminal)
- *
- * `build_widget` is intentionally HTML-free — it returns the chosen skill's
- * design note + interactivity reminders so the agent composes with the right
- * rules in mind. Cost: ~10 tokens to call, ~50 tokens to read. Cheap.
- *
- * `submit_widget` is the only tool that takes HTML — so the model writes
- * the widget HTML exactly once per attempt. Validates everything in one pass.
- * Terminal IF valid; returns issues for the agent to fix otherwise.
- */
-
 export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: "build_widget",

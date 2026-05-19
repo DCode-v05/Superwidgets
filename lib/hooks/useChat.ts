@@ -24,7 +24,6 @@ interface AssistantBuilder {
   widgetHtml: string | null;
   usage: ChatMessage["usage"];
   trace: TraceStep[];
-  /** Look-up map for matching tool_result events back to their tool_call rows. */
   pending: Map<string, number>;
 }
 
@@ -57,7 +56,6 @@ function applyEvent(builder: AssistantBuilder, ev: EngineEvent): boolean {
         builder.trace[idx].isError = ev.isError;
         builder.pending.delete(key);
       } else {
-        // No matching call — synthesize a row
         builder.trace.push({
           iteration: ev.iteration,
           toolName: ev.toolName,
@@ -111,7 +109,7 @@ async function* parseSse(stream: ReadableStream<Uint8Array>): AsyncGenerator<Eng
         const ev = JSON.parse(dataLine) as EngineEvent;
         yield ev;
       } catch {
-        // ignore malformed event
+        /* malformed event */
       }
     }
   }

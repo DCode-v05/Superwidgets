@@ -30,12 +30,10 @@ function renderMessage(msg: ChatMessage): string {
       </div>`;
   }
 
-  // Assistant
   const proseHtml = msg.text
     ? `<div class="prose">${escapeHtml(msg.text).replace(/\n/g, "<br>")}</div>`
     : "";
 
-  // HTML widgets are self-contained with inline styles — drop in as-is.
   const widgetHtml = msg.widgetHtml
     ? `<div class="widget-wrap">${msg.widgetHtml}</div>`
     : "";
@@ -220,7 +218,6 @@ ${body}
 `;
 }
 
-/** Trigger a browser download of the full chat as a standalone .html file. */
 export function downloadChatPage(messages: ChatMessage[]): void {
   const doc = exportChatAsHtml(messages);
   const blob = new Blob([doc], { type: "text/html;charset=utf-8" });

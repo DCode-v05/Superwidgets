@@ -10,14 +10,9 @@ import type { AgentMessage, ToolDefinition } from "../tools/types";
 const MAX_TOKENS = 4096;
 
 /**
- * Anthropic agentic-turn invoker. One turn = one LLM call.
- *
- * Streams text deltas + fully-formed tool calls. Tool execution and the
- * loop itself live in run-engine.ts.
- *
- * Uses the beta prompt-caching endpoint (SDK ^0.32.1 quirk). The system
- * prompt gets `cache_control: ephemeral` so it caches across loop iterations
- * within a turn AND across turns within ~5 min.
+ * Anthropic agent turn (one LLM call). Streams text + tool calls.
+ * Uses the beta prompt-caching endpoint with cache_control: ephemeral on
+ * the system prompt so it caches across loop iterations.
  */
 export function createAnthropicAgent(model: string): AgentTurnInvoker {
   return (systemPrompt, messages, tools) => {
@@ -53,7 +48,6 @@ export function createAnthropicAgent(model: string): AgentTurnInvoker {
         messages: apiMessages,
       });
 
-      // Accumulators for tool-use blocks (streamed as input_json_delta partials)
       const toolBlocks = new Map<
         number,
         { id: string; name: string; jsonBuffer: string }
@@ -157,7 +151,7 @@ function toAnthropicMessage(m: AgentMessage): AnthropicMsg {
       content: blocks.length > 0 ? blocks : [{ type: "text", text: "" }],
     };
   }
-  // role === "tool" — Anthropic carries tool_result blocks inside a user message
+  // tool_result blocks ride inside a user message per Anthropic's API
   return {
     role: "user",
     content: m.results.map((r) => ({

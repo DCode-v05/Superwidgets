@@ -1,25 +1,13 @@
 /**
- * Cost-efficiency sweep for Mini-BAP.
- *
- * Runs every (model × skill-on/off) combination against the three test prompts,
- * scores output structurally, computes cost-per-successful-render, and prints
- * a ranked report. Saves each output as standalone HTML for manual review.
- *
- * Run with:   npm run eval
- * Requires:   Node 20.12+ (uses process.loadEnvFile) — falls back gracefully.
- *
- * Expected total cost: roughly $0.50 - $1.50 depending on output sizes.
- * Expected wall time: 8 - 25 minutes (sequential, respects rate limits).
- *
- * Sweeps all models with skill ON/OFF to find the cost-efficient sweet spot.
+ * `npm run eval` — sweeps every (model × skill on/off) combo against the
+ * test prompts, scores output structurally, prints a $/successful-render
+ * ranking. Requires Node 20.12+ for process.loadEnvFile.
  */
 
-// Load .env.local if available (Node 20.12+).
 try {
-  // ts-expect-error: process.loadEnvFile exists in Node 20.12+, not in types yet
   process.loadEnvFile?.(".env.local");
 } catch {
-  /* If the file doesn't exist or Node version doesn't support it, fall through. */
+  /* missing file or unsupported runtime — fall through */
 }
 
 import { promises as fs } from "node:fs";
@@ -28,9 +16,9 @@ import { runEngine } from "@/lib/engine/run-engine";
 import { PROVIDER_IDS, type ProviderId } from "@/lib/engine/providers";
 import { PROMPTS, type TestPrompt } from "./prompts";
 
-const TRIALS = 2; // Two trials per (combo × prompt) — second confirms caching kicks in
+const TRIALS = 2;
 const OUTPUT_DIR = path.join("eval", "outputs");
-const PASS_THRESHOLD = 0.8; // a "successful" render passes ≥ 80% of structural checks
+const PASS_THRESHOLD = 0.8;
 
 interface Combo {
   label: string;
@@ -94,12 +82,8 @@ function scoreStructure(widgetHtml: string, prompt: TestPrompt): {
 } {
   const checks: Array<{ name: string; pass: boolean }> = [];
 
-  checks.push({
-    name: "has-content",
-    pass: widgetHtml.length > 80,
-  });
+  checks.push({ name: "has-content", pass: widgetHtml.length > 80 });
 
-  // Root has its own background AND color (contrast rule)
   const rootStyle = widgetHtml.match(/^<\w+[^>]*\sstyle=["']([^"']+)["']/i)?.[1] ?? "";
   checks.push({
     name: "root-has-bg-and-color",
@@ -112,16 +96,10 @@ function scoreStructure(widgetHtml: string, prompt: TestPrompt): {
       pass: /\sdata-bap-prompt=/i.test(widgetHtml),
     });
   }
-
-  // For chart prompt, expect inline SVG
   if (prompt.id === "chart") {
-    checks.push({
-      name: "has-inline-svg",
-      pass: /<svg[\s>]/i.test(widgetHtml),
-    });
+    checks.push({ name: "has-inline-svg", pass: /<svg[\s>]/i.test(widgetHtml) });
   }
 
-  // Forbidden tags / attributes
   checks.push({
     name: "no-forbidden-tags",
     pass: !/<(script|iframe|style|form|object|embed)\b/i.test(widgetHtml),
@@ -131,7 +109,6 @@ function scoreStructure(widgetHtml: string, prompt: TestPrompt): {
     pass: !/\son[a-z]+\s*=/i.test(widgetHtml),
   });
 
-  // Tag balance (rough — count open vs close tags, allow 5% drift)
   const openTags = (widgetHtml.match(/<\w+(?:\s[^>]*)?>/g) ?? []).length;
   const closeTags = (widgetHtml.match(/<\/\w+>/g) ?? []).length;
   const selfClosing = (widgetHtml.match(/<\w+[^>]*\/>/g) ?? []).length;

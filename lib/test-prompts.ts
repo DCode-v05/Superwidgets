@@ -1,12 +1,4 @@
-/**
- * Test prompts grouped by widget intent.
- * Two prompts per widget kind — the model picks the widget based on the prompt
- * (the `kind` field here is descriptive, not enforced anywhere).
- *
- * Used by [components/chat/EmptyState.tsx] for one-click testing of each
- * widget kind across the three modes (Anthropic / Gemini + Skill / Llama + Skill).
- */
-
+// Demo prompts grouped by widget intent. `kind` is descriptive, not enforced.
 export interface PromptGroup {
   kind: string;
   label: string;

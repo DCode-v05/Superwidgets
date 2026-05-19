@@ -1,11 +1,6 @@
 /**
- * Verifier for the agentic loop's Action → Verify → OK/Loop cycle.
- *
- * Mirrors HtmlBubble's DOMPurify rules so the agent can self-check before
- * submitting to render_widget. `<script>` and `<form>` ARE allowed (those
- * are removed from the forbidden-tag list); the verifier instead checks
- * that scripts follow the safety rules (no remote loading, no fetch/XHR/
- * eval/new Function/document.write, no inline on* handlers).
+ * Widget structural + script safety validator. Mirrors HtmlBubble's
+ * DOMPurify rules so the agent can self-check before submit_widget renders.
  */
 
 export interface ValidationResult {
@@ -26,13 +21,6 @@ const FORM_METHOD_RE = /<form\b[^>]*\smethod\s*=/i;
 const NETWORK_RE = /\b(fetch|XMLHttpRequest|navigator\.sendBeacon|new\s+EventSource|new\s+WebSocket)\s*\(/;
 const DYNAMIC_CODE_RE = /\b(eval|new\s+Function|document\.write|setTimeout\s*\(\s*['"`]|setInterval\s*\(\s*['"`])/;
 
-/**
- * Max bytes for one widget block. 12KB allows the editorial-quality density
- * the system prompt pushes for (multiple sections, layered typography, 3-6
- * inline SVG icons, footer micro-copy, etc.) while still capping runaway
- * widgets. A "considered" widget typically lands at 2-6KB; this leaves
- * generous headroom for kpi_dashboards and pricing_tables with many tiles.
- */
 const MAX_WIDGET_BYTES = 12_000;
 
 export function validateWidget(html: string): ValidationResult {
@@ -40,14 +28,12 @@ export function validateWidget(html: string): ValidationResult {
   const warnings: string[] = [];
   const raw = html ?? "";
 
-  // 1. Sentinels — required for the parser
   if (!raw.includes(SENTINEL_START) || !raw.includes(SENTINEL_END)) {
     issues.push(
       `Missing required sentinels. Wrap your widget exactly in ${SENTINEL_START} ... ${SENTINEL_END}.`,
     );
   }
 
-  // 2. Single widget block
   const startCount = (raw.match(/<!--bap-widget:start-->/g) ?? []).length;
   const endCount = (raw.match(/<!--bap-widget:end-->/g) ?? []).length;
   if (startCount > 1 || endCount > 1) {
@@ -56,13 +42,11 @@ export function validateWidget(html: string): ValidationResult {
 
   const inner = extractInner(raw);
 
-  // 3. Forbidden tags (script and form are NOT in this list now)
   if (FORBIDDEN_TAG_RE.test(inner)) {
     const tag = inner.match(FORBIDDEN_TAG_RE)?.[1] ?? "unknown";
     issues.push(`Forbidden tag <${tag}> present. Sanitizer will strip it. Remove or replace.`);
   }
 
-  // 4. Inline event handlers (still blocked — use addEventListener)
   if (EVENT_HANDLER_RE.test(inner)) {
     issues.push(
       `Inline event handler (on*=) detected. Sanitizer strips these. ` +
@@ -70,12 +54,10 @@ export function validateWidget(html: string): ValidationResult {
     );
   }
 
-  // 5. Script source URLs (inline only — no remote loading)
   if (SCRIPT_SRC_RE.test(inner)) {
     issues.push(`<script src="..."> not allowed. Inline scripts only — paste the code directly.`);
   }
 
-  // 6. Form action / method (forms must use script-based handling)
   if (FORM_ACTION_RE.test(inner)) {
     issues.push(`<form action="..."> not allowed. Forms never submit anywhere — handle via <script>.`);
   }
@@ -83,7 +65,6 @@ export function validateWidget(html: string): ValidationResult {
     issues.push(`<form method="..."> not allowed. Forms never submit anywhere — handle via <script>.`);
   }
 
-  // 7. Contrast rule — root must set background AND color inline
   const rootStyle = inner.match(/^<\w+[^>]*\sstyle=["']([^"']*)["']/im)?.[1] ?? "";
   const hasBg = /\bbackground/i.test(rootStyle);
   const hasColor = /\bcolor\s*:/i.test(rootStyle);
@@ -94,22 +75,11 @@ export function validateWidget(html: string): ValidationResult {
     );
   }
 
-  // 8. Size cap
   if (inner.length > MAX_WIDGET_BYTES) {
     issues.push(`Widget HTML is ${inner.length} bytes (max ${MAX_WIDGET_BYTES}). Trim styles or content.`);
   }
 
-  // 9. Tag balance — per-tag-name counting.
-  // HTML void elements (input, br, img, hr, …) need no close tag, but it's
-  // legal to write one explicitly (e.g. <path></path> in SVG). SVG leaf
-  // elements (circle, rect, path, …) are typically self-closed in inline
-  // SVG but the HTML parser accepts either form. So:
-  //   - For void/leaf elements: closes are OPTIONAL, but if present, they
-  //     should not EXCEED opens (a stray </path> with no opener is broken).
-  //   - For all other elements: opens (excluding self-closed) must equal closes.
-  // A previous version counted total opens vs total closes globally, which
-  // false-flagged widgets that explicitly closed SVG paths (style="<path>…
-  // </path>") — common in the editorial-quality density the prompt pushes.
+  // Tag balance: void/SVG-leaf elements may omit closes; non-void must match.
   const VOID_OR_LEAF = new Set([
     "area", "base", "br", "col", "embed", "hr", "img", "input", "link",
     "meta", "source", "track", "wbr",
@@ -130,21 +100,16 @@ export function validateWidget(html: string): ValidationResult {
     }
   }
   const balanceIssues: string[] = [];
-  // Per-tag check: walk every name that appears as either open or close
   const allNames = new Set([...openCounts.keys(), ...closeCounts.keys()]);
   for (const name of allNames) {
     const opens = openCounts.get(name) ?? 0;
     const closes = closeCounts.get(name) ?? 0;
     if (VOID_OR_LEAF.has(name)) {
-      // Void/leaf: any open count is fine; closes are optional but must not exceed opens
       if (closes > opens) {
         balanceIssues.push(`<${name}>: ${closes} </${name}> with only ${opens} <${name}> open(s)`);
       }
-    } else {
-      // Non-void: opens must equal closes
-      if (opens !== closes) {
-        balanceIssues.push(`<${name}>: ${opens} open vs ${closes} close`);
-      }
+    } else if (opens !== closes) {
+      balanceIssues.push(`<${name}>: ${opens} open vs ${closes} close`);
     }
   }
   if (balanceIssues.length > 0) {
@@ -155,12 +120,10 @@ export function validateWidget(html: string): ValidationResult {
     );
   }
 
-  // 10. href outside source_cards (heuristic warning)
   if (/<a\s[^>]*href=/i.test(inner)) {
     warnings.push(`<a href> detected. Only valid inside source_cards. For navigation, prefer <button data-bap-prompt>.`);
   }
 
-  // ===== Script-content safety checks (only if script is present) =====
   const scripts = Array.from(inner.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi));
 
   if (scripts.length > 0) {
@@ -178,33 +141,25 @@ export function validateWidget(html: string): ValidationResult {
       );
     }
 
-    // Soft check — recommend IIFE wrap (warning, not blocker)
     const trimmed = allBody.trim();
     if (!/^\(function\s*\(/.test(trimmed) && !/^\(\s*\(\s*\)\s*=>/.test(trimmed) && !/^\(\s*async\s*function/.test(trimmed)) {
       warnings.push(`Recommend wrapping script body in an IIFE: (function(){ ... })();`);
     }
 
-    // Soft check — encourage scoped DOM queries via root id
     const hasGetById = /document\.getElementById\s*\(\s*['"]bap-w-/.test(allBody);
     if (!hasGetById && allBody.length > 80) {
       warnings.push(`Recommend scoping queries to a root element with id="bap-w-..." via document.getElementById.`);
     }
 
-    // Forms in widget should have preventDefault on submit handler
     if (/<form\b/i.test(inner) && /addEventListener\s*\(\s*["']submit/.test(allBody) && !/preventDefault\s*\(\s*\)/.test(allBody)) {
       issues.push(`Form submit handler must call e.preventDefault() — otherwise the page navigates.`);
     }
 
-    // Total script size budget
     if (allBody.length > 4000) {
       warnings.push(`Script body is ${allBody.length} chars — consider trimming under 4000.`);
     }
 
-    // === .value vs .textContent mismatch detection ===
-    // Catches the most common LLM bug for interactive widgets: confusing
-    // <input>/<select>/<textarea> (which use .value) with <div>/<span>
-    // (which use .textContent). Symptom: widget renders but typing doesn't
-    // visibly update — the script writes to the wrong property.
+    // .value vs .textContent mismatch — most common LLM bug for interactive widgets.
     const varToRole = new Map<string, string>();
     const bindingRe =
       /\b(?:var|let|const)\s+(\w+)\s*=\s*[\w.]+\.querySelector(?:All)?\s*\(\s*['"`]\[data-role=([^'"`\]\s]+)\][^)]*\)/g;
@@ -229,7 +184,6 @@ export function validateWidget(html: string): ValidationResult {
       return re.test(inner);
     };
 
-    // Pattern A: writes to .textContent on an input-like element
     const textWriteRe = /\b(\w+)\.textContent\s*=/g;
     let tw: RegExpExecArray | null;
     while ((tw = textWriteRe.exec(allBody)) !== null) {
@@ -244,7 +198,6 @@ export function validateWidget(html: string): ValidationResult {
       }
     }
 
-    // Pattern B: reads .textContent from an input-like element (parseFloat, etc.)
     const textReadRe = /\b(\w+)\.textContent\b(?!\s*=)/g;
     let tr: RegExpExecArray | null;
     while ((tr = textReadRe.exec(allBody)) !== null) {
@@ -258,7 +211,6 @@ export function validateWidget(html: string): ValidationResult {
       }
     }
 
-    // Pattern C: writes to .value on a non-input display element
     const valueWriteRe = /\b(\w+)\.value\s*=/g;
     let vw: RegExpExecArray | null;
     while ((vw = valueWriteRe.exec(allBody)) !== null) {

@@ -49,7 +49,6 @@ export function CostCalculator() {
   const [outputTokens, setOutputTokens] = useState(500);
   const [cacheHitRate, setCacheHitRate] = useState(0);
 
-  // Close on Escape
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -115,7 +114,6 @@ export function CostCalculator() {
               </button>
             </div>
 
-            {/* Inputs */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-5 mb-3">
               <NumberField
                 label="Input tokens"
@@ -142,7 +140,6 @@ export function CostCalculator() {
               </div>
             </div>
 
-            {/* Presets */}
             <div className="flex items-center gap-2 flex-wrap mb-5">
               <span className="text-[10px] uppercase tracking-[0.2em] text-[var(--secondary)] font-mono">
                 Presets
@@ -162,7 +159,6 @@ export function CostCalculator() {
               ))}
             </div>
 
-            {/* Cost table */}
             <div className="border border-[var(--border)] rounded-lg overflow-hidden">
               <table className="w-full text-xs">
                 <thead className="bg-[var(--surface-2)]">

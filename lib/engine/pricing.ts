@@ -2,25 +2,12 @@ import type { ProviderId } from "./providers";
 import type { UsageMetadata } from "./providers/types";
 
 export interface ProviderPricing {
-  /** $/MTok for standard (uncached) input. */
   input: number;
-  /** $/MTok for output. */
   output: number;
-  /** $/MTok for cache-read input ("cache hits"). */
   cachedInput: number;
 }
 
-/**
- * Pricing per model in USD per million tokens — verified against official
- * docs (Anthropic, OpenAI, Google) as of 2026-05-13.
- *
- * Anthropic cache writes (5m) cost 1.25× the base input rate — applied in
- * `computeCost` via the `cacheWriteTokens` field.
- *
- * Gemini context caching cache-read rate is ~10% of base input (when used).
- * OpenAI auto-caching: cached input is ~10% of base (GPT-5.4 family / 5.5).
- * GPT-5.4 Mini cached is also 10% of base.
- */
+// $ / MTok. Anthropic cache writes are 1.25× the input rate (applied in computeCost).
 const PRICING: Record<ProviderId, ProviderPricing> = {
   sonnet: { input: 3.00, output: 15.00, cachedInput: 0.30 },
   haiku: { input: 1.00, output: 5.00, cachedInput: 0.10 },
@@ -50,10 +37,6 @@ export function computeCost(providerId: ProviderId, usage: UsageMetadata): numbe
   return inputCost + outputCost;
 }
 
-/**
- * Estimate cost for arbitrary input/output token counts at a given cache
- * hit ratio. Used by the in-app cost calculator.
- */
 export function estimateCost(
   providerId: ProviderId,
   inputTokens: number,

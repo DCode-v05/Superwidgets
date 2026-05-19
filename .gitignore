@@ -8,4 +8,3 @@ node_modules
 next-env.d.ts
 eval/outputs/
 eval/results-*.json
-engine-peripherals

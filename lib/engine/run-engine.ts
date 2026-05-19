@@ -13,16 +13,6 @@ import {
 } from "./tools";
 
 const SKILL_SEPARATOR = "\n\n---\n\n";
-
-/**
- * Maximum loop iterations before forced stop.
- * Each iteration = one LLM call. The agent has 3 phases (optional gather,
- * verify, render) plus 2–3 revision rounds — 8 is a generous safety net.
- *
- * In engine-peripherals terms: this is the circuit breaker for the per-turn
- * agent loop. Asset Directory's CircuitBreaker has a similar role for
- * external tool calls.
- */
 const MAX_ITERATIONS = 8;
 
 export interface RunEngineOpts {
@@ -30,23 +20,6 @@ export interface RunEngineOpts {
   useSkill: boolean;
 }
 
-/**
- * The agentic loop — Action → Verify → OK / Loop.
- *
- *   1. Send the message + tools to the provider.
- *   2. Stream text deltas to UI.
- *   3. Execute every tool call this turn:
- *        - lookup_example (gather context, optional)
- *        - validate_widget (verify the widget HTML)
- *        - render_widget (TERMINAL — submit + end loop)
- *   4. Append assistant message + tool_result messages to the conversation.
- *   5. If render_widget fired and validated → emit widget + stop.
- *      Otherwise loop back to step 1 with the new tool results in context.
- *   6. Forced stop after MAX_ITERATIONS as a safety net.
- *
- * In production this is invoked by the main BAP engine with a delegation
- * payload. In the prototype it's invoked by the user's chat message.
- */
 export async function* runEngine(
   userMessage: string,
   history: Array<{ role: "user" | "assistant"; content: string }>,
@@ -57,7 +30,6 @@ export async function* runEngine(
     ? FRONTEND_DESIGN_SKILL + SKILL_SEPARATOR + SYSTEM_PROMPT_FREEFORM
     : SYSTEM_PROMPT_FREEFORM;
 
-  // Seed the conversation: prior history + the new user turn
   const messages: AgentMessage[] = [
     ...history
       .filter((m) => m.content && m.content.trim().length > 0)
@@ -104,8 +76,6 @@ export async function* runEngine(
       summedUsage.cacheWriteTokens += usage.cacheWriteTokens;
 
       if (toolCallsThisTurn.length === 0) {
-        // No tools called — model gave up without rendering. Streamed text
-        // is already in the UI; we can't fabricate a widget.
         if (stopReason === "max_tokens") {
           loopError = "Model hit max_tokens before calling render_widget.";
         } else if (!assistantText.trim()) {
@@ -114,19 +84,16 @@ export async function* runEngine(
         break;
       }
 
-      // Record the assistant's turn (text + tool calls)
       messages.push({
         role: "assistant",
         content: assistantText,
         toolCalls: toolCallsThisTurn,
       });
 
-      // Execute every tool call this turn, in order
       const results: ToolResult[] = [];
       for (const call of toolCallsThisTurn) {
         const exec = executeTool(call);
         results.push(exec.result);
-
         yield {
           type: "tool_result",
           iteration,
@@ -134,15 +101,12 @@ export async function* runEngine(
           resultSummary: truncate(exec.result.content, 360),
           isError: exec.result.isError,
         };
-
-        if (exec.finalRender) {
-          finalWidget = exec.finalRender;
-        }
+        if (exec.finalRender) finalWidget = exec.finalRender;
       }
 
       messages.push({ role: "tool", results });
 
-      if (finalWidget) break; // Terminal tool fired → exit loop
+      if (finalWidget) break;
     } catch (err) {
       loopError = err instanceof Error ? err.message : String(err);
       break;
@@ -164,8 +128,6 @@ export async function* runEngine(
 
   yield buildUsageEvent(opts.providerId, summedUsage);
 }
-
-// === helpers ===
 
 function summarizeInput(toolName: string, input: Record<string, unknown>): string {
   if (toolName === "build_widget") {
