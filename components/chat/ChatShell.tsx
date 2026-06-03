@@ -34,12 +34,12 @@ export function ChatShell() {
     const onClick = (e: MouseEvent) => {
       const target = e.target;
       if (!(target instanceof HTMLElement)) return;
-      const el = target.closest<HTMLElement>("[data-bap-prompt]");
+      const el = target.closest<HTMLElement>("[data-superwidgets-prompt]");
       if (!el) return;
       e.preventDefault();
-      const prompt = el.dataset.bapPrompt;
+      const prompt = el.dataset.superwidgetsPrompt;
       if (!prompt) return;
-      if ("bapConfirm" in el.dataset) {
+      if ("superwidgetsConfirm" in el.dataset) {
         const label = el.textContent?.trim() ?? "this action";
         if (!window.confirm(`Confirm: ${label}?`)) return;
       }
@@ -70,7 +70,7 @@ export function ChatShell() {
           <div className="flex items-baseline gap-3">
             <Sparkles className="h-5 w-5 text-accent translate-y-[3px]" strokeWidth={1.5} />
             <h1 className="font-display text-2xl font-bold tracking-tight leading-none">
-              Mini-BAP
+              Superwidgets
             </h1>
             <span className="hidden md:inline text-[10px] uppercase tracking-[0.25em] text-[var(--secondary)] ml-2 font-mono">
               Interactive UI Responses

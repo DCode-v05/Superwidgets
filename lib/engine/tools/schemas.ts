@@ -40,8 +40,8 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         html: {
           type: "string",
           description:
-            "Full widget HTML INCLUDING <!--bap-widget:start--> and " +
-            "<!--bap-widget:end--> sentinel comments. Build a complete, " +
+            "Full widget HTML INCLUDING <!--superwidgets-widget:start--> and " +
+            "<!--superwidgets-widget:end--> sentinel comments. Build a complete, " +
             "considered widget with rich hierarchy, multiple sections, " +
             "and the structural / typographic tools the system prompt " +
             "describes. Use CSS shorthand for code-side neatness.",

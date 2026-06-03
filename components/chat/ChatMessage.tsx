@@ -33,7 +33,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
     <div className="flex justify-start mb-8 animate-fade-up">
       <div className="max-w-[92%] w-full flex items-start gap-3">
         <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-accent pt-2.5 select-none">
-          BAP
+          Superwidgets
         </div>
         <div className="flex-1 flex flex-col gap-1.5">
           {message.trace && (message.trace.length > 0 || message.isStreaming) && (

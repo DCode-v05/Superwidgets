@@ -15,7 +15,7 @@ export function ChatInput({
   onSend,
   isStreaming,
   disabled,
-  placeholder = "Ask Mini-BAP anything…",
+  placeholder = "Ask Superwidgets anything…",
 }: ChatInputProps) {
   const [value, setValue] = useState("");
   const ref = useRef<HTMLTextAreaElement>(null);

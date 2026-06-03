@@ -33,8 +33,8 @@ export function executeTool(call: ToolCall): ExecuteResult {
   }
 }
 
-const SENTINEL_START = "<!--bap-widget:start-->";
-const SENTINEL_END = "<!--bap-widget:end-->";
+const SENTINEL_START = "<!--superwidgets-widget:start-->";
+const SENTINEL_END = "<!--superwidgets-widget:end-->";
 
 function runBuild(call: ToolCall): ExecuteResult {
   const intent = String(call.input.intent ?? "").trim();
@@ -61,7 +61,7 @@ function runBuild(call: ToolCall): ExecuteResult {
     const formNote =
       skill.intent === "quiz" || skill.intent === "form" ? " + <form>" : "";
     reminders.push(
-      `Uses <script>${formNote}. IIFE wrap · unique root id="bap-w-..." · ` +
+      `Uses <script>${formNote}. IIFE wrap · unique root id="superwidgets-w-..." · ` +
         `null-guard every querySelector · .value on <input>/<select>/<textarea>, ` +
         `.textContent on <div>/<span> · "input" event for live updates · ` +
         `no fetch/XHR/eval.`,
@@ -74,13 +74,13 @@ function runBuild(call: ToolCall): ExecuteResult {
     reminders.push(`<a href> is allowed in this widget ONLY.`);
   }
   if (skill.intent === "confirm_card") {
-    reminders.push(`The confirm/proceed button MUST have data-bap-confirm.`);
+    reminders.push(`The confirm/proceed button MUST have data-superwidgets-confirm.`);
   }
 
   reminders.push(
     skill.intent === "source_cards"
       ? `CLICK TARGET: each citation anchor MUST have target="_blank" rel="noopener" so it opens in a new tab.`
-      : `CLICK TARGET: include at least one data-bap-prompt="..." on the natural per-item target ` +
+      : `CLICK TARGET: include at least one data-superwidgets-prompt="..." on the natural per-item target ` +
         `(button / row / card / SVG node / table cell). Add cursor:pointer.`,
   );
 

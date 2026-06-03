@@ -10,8 +10,8 @@ export interface ValidationResult {
   summary: string;
 }
 
-const SENTINEL_START = "<!--bap-widget:start-->";
-const SENTINEL_END = "<!--bap-widget:end-->";
+const SENTINEL_START = "<!--superwidgets-widget:start-->";
+const SENTINEL_END = "<!--superwidgets-widget:end-->";
 
 const FORBIDDEN_TAG_RE = /<(iframe|style|object|embed)\b/i;
 const EVENT_HANDLER_RE = /\son[a-z]+\s*=/i;
@@ -34,8 +34,8 @@ export function validateWidget(html: string): ValidationResult {
     );
   }
 
-  const startCount = (raw.match(/<!--bap-widget:start-->/g) ?? []).length;
-  const endCount = (raw.match(/<!--bap-widget:end-->/g) ?? []).length;
+  const startCount = (raw.match(/<!--superwidgets-widget:start-->/g) ?? []).length;
+  const endCount = (raw.match(/<!--superwidgets-widget:end-->/g) ?? []).length;
   if (startCount > 1 || endCount > 1) {
     issues.push(`Exactly ONE widget block per response. Found ${startCount} start / ${endCount} end sentinels.`);
   }
@@ -80,12 +80,12 @@ export function validateWidget(html: string): ValidationResult {
   }
 
   const hasClickTarget =
-    /\bdata-bap-prompt\s*=/i.test(inner) ||
+    /\bdata-superwidgets-prompt\s*=/i.test(inner) ||
     /<a\s[^>]*\bhref\s*=[^>]*\btarget\s*=\s*["']_blank/i.test(inner);
   if (!hasClickTarget) {
     issues.push(
       `Widget has no click target. Every widget MUST have at least one ` +
-        `\`data-bap-prompt="..."\` element (button / row / card / SVG node / table cell) ` +
+        `\`data-superwidgets-prompt="..."\` element (button / row / card / SVG node / table cell) ` +
         `for follow-up, OR — only for source_cards — an \`<a href target="_blank">\` link.`,
     );
   }
@@ -141,7 +141,7 @@ export function validateWidget(html: string): ValidationResult {
   }
 
   if (/<a\s[^>]*href=/i.test(inner)) {
-    warnings.push(`<a href> detected. Only valid inside source_cards. For navigation, prefer <button data-bap-prompt>.`);
+    warnings.push(`<a href> detected. Only valid inside source_cards. For navigation, prefer <button data-superwidgets-prompt>.`);
   }
 
   const scripts = Array.from(inner.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi));
@@ -152,7 +152,7 @@ export function validateWidget(html: string): ValidationResult {
     if (NETWORK_RE.test(allBody)) {
       issues.push(
         `Script attempts network call (fetch / XHR / WebSocket / sendBeacon). ` +
-          `Mini-BAP widgets are purely client-side — remove network code.`,
+          `Superwidgets widgets are purely client-side — remove network code.`,
       );
     }
     if (DYNAMIC_CODE_RE.test(allBody)) {
@@ -166,9 +166,9 @@ export function validateWidget(html: string): ValidationResult {
       warnings.push(`Recommend wrapping script body in an IIFE: (function(){ ... })();`);
     }
 
-    const hasGetById = /document\.getElementById\s*\(\s*['"]bap-w-/.test(allBody);
+    const hasGetById = /document\.getElementById\s*\(\s*['"]superwidgets-w-/.test(allBody);
     if (!hasGetById && allBody.length > 80) {
-      warnings.push(`Recommend scoping queries to a root element with id="bap-w-..." via document.getElementById.`);
+      warnings.push(`Recommend scoping queries to a root element with id="superwidgets-w-..." via document.getElementById.`);
     }
 
     if (/<form\b/i.test(inner) && /addEventListener\s*\(\s*["']submit/.test(allBody) && !/preventDefault\s*\(\s*\)/.test(allBody)) {

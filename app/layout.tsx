@@ -21,7 +21,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Mini-BAP — Interactive UI Responses",
+  title: "Superwidgets — Interactive UI Responses",
   description: "Prototype demonstrating typed widget responses streamed from an LLM.",
 };
 

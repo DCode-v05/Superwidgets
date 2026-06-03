@@ -1,5 +1,5 @@
 export function wrapWidgetAsDocument(widgetHtml: string, title?: string): string {
-  const safeTitle = (title ?? "Mini-BAP Widget").replace(/[<>&"']/g, "");
+  const safeTitle = (title ?? "Superwidgets Widget").replace(/[<>&"']/g, "");
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,14 +18,14 @@ export function wrapWidgetAsDocument(widgetHtml: string, title?: string): string
       min-height: 100vh;
       box-sizing: border-box;
     }
-    .bap-widget-container {
+    .superwidgets-widget-container {
       max-width: 820px;
       width: 100%;
     }
   </style>
 </head>
 <body>
-  <div class="bap-widget-container">
+  <div class="superwidgets-widget-container">
 ${widgetHtml}
   </div>
 </body>
@@ -39,7 +39,7 @@ function triggerDownload(content: string, ext: string, mime: string): void {
   const a = document.createElement("a");
   const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
   a.href = url;
-  a.download = `bap-widget-${ts}.${ext}`;
+  a.download = `superwidgets-widget-${ts}.${ext}`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

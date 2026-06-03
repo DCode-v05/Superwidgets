@@ -150,8 +150,8 @@ function truncate(s: string, n: number): string {
 }
 
 function extractInner(raw: string): string {
-  const START = "<!--bap-widget:start-->";
-  const END = "<!--bap-widget:end-->";
+  const START = "<!--superwidgets-widget:start-->";
+  const END = "<!--superwidgets-widget:end-->";
   const i = raw.indexOf(START);
   const j = raw.indexOf(END);
   if (i === -1 || j === -1 || j <= i) return raw;

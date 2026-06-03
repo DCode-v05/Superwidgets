@@ -26,7 +26,7 @@ const SANITIZE_CONFIG: Config = {
   ],
   ALLOWED_ATTR: [
     "class", "style", "id", "title", "lang", "dir",
-    "data-bap-prompt", "data-bap-confirm",
+    "data-superwidgets-prompt", "data-superwidgets-confirm",
     "href", "target", "rel",
     "viewBox", "xmlns", "preserveAspectRatio", "width", "height",
     "x", "y", "x1", "y1", "x2", "y2", "cx", "cy", "r", "rx", "ry",
@@ -80,13 +80,13 @@ export function HtmlBubble({ html }: { html: string }) {
     lastInjectedRef.current = clean;
 
     // Per-instance ID rewriting. Without this, multiple widgets on the page
-    // with the same model-emitted id (e.g. "bap-w-tip") collide and
+    // with the same model-emitted id (e.g. "superwidgets-w-tip") collide and
     // document.getElementById returns the first match — scripts bind to
     // the wrong widget's elements.
     const instanceTag = Math.random().toString(36).slice(2, 8);
     const rewrittenIds = new Set<string>();
     const transformedHtml = clean.replace(
-      /\bid=(["'])(bap-w-[A-Za-z0-9_-]+)\1/g,
+      /\bid=(["'])(superwidgets-w-[A-Za-z0-9_-]+)\1/g,
       (_match, quote, id) => {
         rewrittenIds.add(id);
         return `id=${quote}${id}-${instanceTag}${quote}`;
@@ -117,7 +117,7 @@ export function HtmlBubble({ html }: { html: string }) {
       if (idRewriteRegex) {
         body = body.replace(idRewriteRegex, (m) => `${m}-${instanceTag}`);
       }
-      fresh.text = `try{${body}}catch(e){console.error("[bap-widget] script error:",e);}`;
+      fresh.text = `try{${body}}catch(e){console.error("[superwidgets-widget] script error:",e);}`;
       try {
         oldScript.replaceWith(fresh);
       } catch {
@@ -126,5 +126,5 @@ export function HtmlBubble({ html }: { html: string }) {
     }
   }, [clean]);
 
-  return <div ref={containerRef} className="bap-bubble" />;
+  return <div ref={containerRef} className="superwidgets-bubble" />;
 }
