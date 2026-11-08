@@ -8,3 +8,9 @@ node_modules
 next-env.d.ts
 eval/outputs/
 eval/results-*.json
+*.tsbuildinfo
+.vscode/
+.idea/
+Thumbs.db
+.env*.local
+!.env.local.example
