@@ -3,13 +3,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import DOMPurify, { type Config } from "dompurify";
 
-/**
- * DOMPurify config. Allows <script>, <form>, and form controls so the LLM
- * can build interactive widgets. Safety:
- *  - <script src>, <form action>, <form method>, on*= are all stripped
- *  - All data-* attributes preserved (model uses them as selector hooks)
- *  - Single-user prototype — scripts run in the user's own tab
- */
 const SANITIZE_CONFIG: Config = {
   ALLOWED_TAGS: [
     "div", "span", "p", "h1", "h2", "h3", "h4", "ul", "ol", "li",
@@ -64,8 +57,6 @@ const SANITIZE_CONFIG: Config = {
 
 export function HtmlBubble({ html }: { html: string }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  // Guards against StrictMode's double-effect-run from blowing away the DOM
-  // (and bound listeners) on the second run.
   const lastInjectedRef = useRef<string | null>(null);
 
   const clean = useMemo(
@@ -79,10 +70,6 @@ export function HtmlBubble({ html }: { html: string }) {
     if (lastInjectedRef.current === clean) return;
     lastInjectedRef.current = clean;
 
-    // Per-instance ID rewriting. Without this, multiple widgets on the page
-    // with the same model-emitted id (e.g. "superwidgets-w-tip") collide and
-    // document.getElementById returns the first match — scripts bind to
-    // the wrong widget's elements.
     const instanceTag = Math.random().toString(36).slice(2, 8);
     const rewrittenIds = new Set<string>();
     const transformedHtml = clean.replace(
@@ -106,10 +93,6 @@ export function HtmlBubble({ html }: { html: string }) {
           )
         : null;
 
-    // HTML5 spec: <script> elements set via innerHTML do NOT execute. Clone
-    // each into a fresh element (which DOES execute) and replace the inert
-    // original. Wrap the body in try/catch so an in-script throw doesn't
-    // surface in the Next.js error overlay.
     for (const oldScript of root.querySelectorAll("script")) {
       const fresh = document.createElement("script");
       if (oldScript.type) fresh.type = oldScript.type;
@@ -121,7 +104,6 @@ export function HtmlBubble({ html }: { html: string }) {
       try {
         oldScript.replaceWith(fresh);
       } catch {
-        /* node already detached */
       }
     }
   }, [clean]);

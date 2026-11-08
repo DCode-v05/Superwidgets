@@ -1,5 +1,3 @@
-/** The widget skill catalog. 22 skills the agent picks from per turn. */
-
 export interface WidgetSkill {
   intent: string;
   appliesWhen: string;

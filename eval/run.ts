@@ -1,13 +1,6 @@
-/**
- * `npm run eval` — sweeps every (model × skill on/off) combo against the
- * test prompts, scores output structurally, prints a $/successful-render
- * ranking. Requires Node 20.12+ for process.loadEnvFile.
- */
-
 try {
   process.loadEnvFile?.(".env.local");
 } catch {
-  /* missing file or unsupported runtime — fall through */
 }
 
 import { promises as fs } from "node:fs";

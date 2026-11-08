@@ -1,4 +1,3 @@
-// Demo prompts grouped by widget intent. `kind` is descriptive, not enforced.
 export interface PromptGroup {
   kind: string;
   label: string;

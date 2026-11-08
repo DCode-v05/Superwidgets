@@ -63,7 +63,6 @@ function WidgetActions({ content }: { content: string }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      /* clipboard may be blocked — best-effort */
     }
   };
 

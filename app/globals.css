@@ -42,7 +42,6 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Atmospheric backdrop — subtle warm radial gradients */
 body::before {
   content: "";
   position: fixed;
@@ -54,7 +53,6 @@ body::before {
     radial-gradient(ellipse 60% 40% at 100% 100%, rgba(168, 35, 47, 0.025) 0%, transparent 70%);
 }
 
-/* Refined markdown prose */
 .md-prose {
   color: var(--foreground);
 }
@@ -108,7 +106,6 @@ body::before {
   margin-block: 0.75rem;
 }
 
-/* Widget bubble entrance animation */
 @keyframes superwidgets-bubble-in {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
@@ -117,7 +114,6 @@ body::before {
   animation: superwidgets-bubble-in 0.35s ease-out;
 }
 
-/* Refined scrollbar */
 .scroll-area::-webkit-scrollbar { width: 6px; }
 .scroll-area::-webkit-scrollbar-thumb {
   background: var(--border);
@@ -127,7 +123,6 @@ body::before {
   background: var(--secondary);
 }
 
-/* Selection */
 ::selection {
   background: #EC3B4A;
   color: white;

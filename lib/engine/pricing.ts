@@ -7,7 +7,6 @@ export interface ProviderPricing {
   cachedInput: number;
 }
 
-// $ / MTok. Anthropic cache writes are 1.25× the input rate (applied in computeCost).
 const PRICING: Record<ProviderId, ProviderPricing> = {
   sonnet: { input: 3.00, output: 15.00, cachedInput: 0.30 },
   haiku: { input: 1.00, output: 5.00, cachedInput: 0.10 },

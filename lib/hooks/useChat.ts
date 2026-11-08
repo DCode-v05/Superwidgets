@@ -109,7 +109,6 @@ async function* parseSse(stream: ReadableStream<Uint8Array>): AsyncGenerator<Eng
         const ev = JSON.parse(dataLine) as EngineEvent;
         yield ev;
       } catch {
-        /* malformed event */
       }
     }
   }

@@ -1,8 +1,3 @@
-/**
- * Widget structural + script safety validator. Mirrors HtmlBubble's
- * DOMPurify rules so the agent can self-check before submit_widget renders.
- */
-
 export interface ValidationResult {
   valid: boolean;
   issues: string[];
@@ -90,10 +85,6 @@ export function validateWidget(html: string): ValidationResult {
     );
   }
 
-  // Tag balance: void/SVG-leaf elements may omit closes; non-void must match.
-  // Script bodies are stripped first — strings like 'o.innerHTML="<div>x</div>"'
-  // generate DOM at runtime, not at parse time, so they shouldn't be counted.
-  // Regex allows `>` inside quoted attribute values.
   const VOID_OR_LEAF = new Set([
     "area", "base", "br", "col", "embed", "hr", "img", "input", "link",
     "meta", "source", "track", "wbr",
@@ -179,7 +170,6 @@ export function validateWidget(html: string): ValidationResult {
       warnings.push(`Script body is ${allBody.length} chars — consider trimming under 4000.`);
     }
 
-    // .value vs .textContent mismatch — most common LLM bug for interactive widgets.
     const varToRole = new Map<string, string>();
     const bindingRe =
       /\b(?:var|let|const)\s+(\w+)\s*=\s*[\w.]+\.querySelector(?:All)?\s*\(\s*['"`]\[data-role=([^'"`\]\s]+)\][^)]*\)/g;
